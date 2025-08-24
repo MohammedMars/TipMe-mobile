@@ -1,4 +1,3 @@
-//lib/reciver/auth/screens/login/verify_phone_page.dart (Updated with resend functionality)
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
@@ -26,7 +25,7 @@ class VerifyPhonePage extends StatefulWidget {
   const VerifyPhonePage({
     Key? key,
     required this.phoneNumber,
-    this.isLogin = false, // <-- Default to false
+    this.isLogin = false,
   }) : super(key: key);
 
   @override
@@ -39,6 +38,9 @@ class _VerifyPhonePageState extends State<VerifyPhonePage> {
   bool _isVerifying = false;
   bool _isResending = false;
   String? _errorMessage;
+
+  // Add GlobalKey to access OtpInput widget
+  final GlobalKey<OtpInputState> _otpInputKey = GlobalKey<OtpInputState>();
 
   void _onOtpChanged(String value) {
     setState(() {
@@ -115,6 +117,9 @@ class _VerifyPhonePageState extends State<VerifyPhonePage> {
           widget.isLogin ? await service.login(dto) : await service.signUp(dto);
 
       if (response.success) {
+        // Restart the timer when resend is successful
+        _otpInputKey.currentState?.restartTimer();
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Verification code sent successfully'),
@@ -257,6 +262,7 @@ class _VerifyPhonePageState extends State<VerifyPhonePage> {
                         child: Column(
                           children: [
                             OtpInput(
+                              key: _otpInputKey, // Add the key here
                               length: _otpLength,
                               onOtpChanged: _onOtpChanged,
                               otpCode: _otpCode,

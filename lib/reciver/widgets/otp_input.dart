@@ -1,4 +1,3 @@
-//lib/reciver/auth/widgets/otp_input.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -22,10 +21,10 @@ class OtpInput extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<OtpInput> createState() => _OtpInputState();
+  State<OtpInput> createState() => OtpInputState();
 }
 
-class _OtpInputState extends State<OtpInput> {
+class OtpInputState extends State<OtpInput> {
   late TextEditingController _controller;
   late FocusNode _focusNode;
   String _displayText = '';
@@ -160,7 +159,7 @@ class _OtpInputState extends State<OtpInput> {
     });
   }
 
-  // when resend OTP, restart timer
+  // Make this method public so it can be called from parent widget
   void restartTimer() {
     _timer?.cancel();
     setState(() {
