@@ -11,4 +11,5 @@ enum ApiServiceType {
   Notification,
   TipTransaction,
   Settings,
+  AppSettings,
 }

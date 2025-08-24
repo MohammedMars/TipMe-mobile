@@ -62,7 +62,8 @@ class _ChangeBankAccountDetailsPageState
   void initState() {
     super.initState();
     _loadLookups();
-    _bankName = widget.bankName; // prefill bank name
+    _bankName = widget.bankName;
+    initService();
   }
 
   Future<void> _loadLookups() async {
@@ -70,6 +71,11 @@ class _ChangeBankAccountDetailsPageState
     setState(() {
       _countries = countries;
     });
+  }
+
+  void initService() {
+    _tipReceiverService =
+        TipReceiverService(sl<DioClient>(instanceName: 'TipReceiver'));
   }
 
   Future<void> _onSave() async {
@@ -84,7 +90,7 @@ class _ChangeBankAccountDetailsPageState
         bankName: _bankName ?? widget.bankName,
         bankCountryId: _selectedCountry!,
       );
-      
+
       final response = await _tipReceiverService.updatePaymentInfo(dto);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Bank account updated successfully")),

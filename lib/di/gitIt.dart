@@ -38,6 +38,11 @@ void registerSingilton() {
   sl.registerLazySingleton<DioClient>(
       () => createDioClient(ApiServiceType.Settings),
       instanceName: 'TipReceiverSettings');
+
+  sl.registerLazySingleton<DioClient>(
+    () => createDioClient(ApiServiceType.AppSettings),
+    instanceName: 'AppSettings',
+  );
 }
 
 DioClient createDioClient(ApiServiceType apiServiceType) {

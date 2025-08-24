@@ -11,6 +11,7 @@ class ServiceConfigration {
     ApiServiceType.Statistics: ApiServicePath.statisticsPath,
     ApiServiceType.TipTransaction: ApiServicePath.tipTransactionPath,
     ApiServiceType.Settings: ApiServicePath.settingsPath,
+    ApiServiceType.AppSettings: ApiServicePath.appSettingsPath,
   };
   Map<ApiServiceType, String> get config => _config;
 }
