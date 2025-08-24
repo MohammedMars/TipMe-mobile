@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:tipme_app/core/dio/client/dio_client.dart';
+import 'package:tipme_app/core/storage/storage_service.dart';
 import 'package:tipme_app/di/gitIt.dart';
 import 'package:tipme_app/reciver/widgets/iban_help_bottom_sheet.dart';
 import 'package:tipme_app/services/tipReceiverService.dart';
@@ -35,13 +36,16 @@ class _AvailableBalanceCardState extends State<AvailableBalanceCard> {
   String? balance;
   bool loading = true;
   late TipReceiverStatisticsService _statisticsService;
-  var _currency = "SAR";
+  var _currency = "";
   @override
   void initState() {
     super.initState();
+    _initializeScreen();
     _fetchBalance();
   }
-
+  Future<void> _initializeScreen() async {
+    _currency = await StorageService.get('Currency') ?? "";
+  }
   Future<void> _fetchBalance() async {
     try {
       _statisticsService = TipReceiverStatisticsService(

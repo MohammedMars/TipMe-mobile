@@ -20,7 +20,7 @@ class Country {
   String nationality;
   final String currency;
   List<City> cities;
-
+  final String flag;
   Country({
     required this.id,
     required this.name,
@@ -29,6 +29,7 @@ class Country {
     required this.nationality,
     required this.currency,
     required this.cities,
+    required this.flag,
   });
 
   factory Country.fromJson(Map<String, dynamic> json) {
@@ -39,9 +40,9 @@ class Country {
       phoneCode: json['phoneCode'],
       nationality: json['nationality'],
       currency: json['currency'],
-      cities: (json['cities'] as List)
-          .map((city) => City.fromJson(city))
-          .toList(),
+      cities:
+          (json['cities'] as List).map((city) => City.fromJson(city)).toList(),
+      flag: json['flag'] ?? json['code']?.toFlag,
     );
   }
 }

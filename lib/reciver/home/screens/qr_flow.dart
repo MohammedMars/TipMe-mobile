@@ -53,20 +53,21 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isLoading = true;
   String? errorMessage;
   QRCodeService? qrCodeService;
-  String _currency = "SAR";
+  String _currency = "";
   double _balance = 0.0;
 
   @override
   void initState() {
     super.initState();
-    _initializeService();
+    _initializeScreen();
     _loadQRCodeFromBackend();
     _loadSavedLogo();
     _fetchBalance();
   }
 
-  void _initializeService() {
+  Future<void> _initializeScreen() async {
     qrCodeService = QRCodeService(sl<DioClient>(instanceName: 'QrCode'));
+    _currency = await StorageService.get('Currency') ?? "";
   }
 
   Future<void> _loadQRCodeFromBackend() async {
@@ -591,7 +592,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Always refresh the QR code from backend when returning
     await _loadQRCodeFromBackend();
-    
+
     // Also refresh the logo in case it was updated
     await _loadSavedLogo();
   }

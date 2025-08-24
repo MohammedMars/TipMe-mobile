@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+import 'package:tipme_app/core/storage/storage_service.dart';
 import 'package:tipme_app/reciver/screens/wallet/notification_screen.dart';
 import 'package:tipme_app/reciver/widgets/custom_bottom_navigation.dart';
 import 'package:tipme_app/reciver/widgets/wallet_widgets/custom_switch_widget.dart';
@@ -40,6 +41,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   final int _pageSize = 10;
   bool _hasMore = true;
   bool _isLoadingMore = false;
+  
+  var _currency;
 
   @override
   void initState() {
@@ -47,6 +50,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     _transactionService = TipTransactionService(
         dioClient: sl<DioClient>(instanceName: 'TipTransaction'));
     _loadTransactions();
+    _initializeScreen();
+  }
+
+  Future<void> _initializeScreen() async {
+    _currency = await StorageService.get('Currency') ?? "";
   }
 
   Future<void> _loadTransactions({bool loadMore = false}) async {
@@ -85,12 +93,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           _errorMessage = response.message ?? 'Failed to load transactions';
         });
       }
-      print("Items Length ${_allTransactions.length}");
     } catch (e) {
       setState(() {
         _errorMessage = 'An error occurred: $e';
       });
-    } finally {
+  } finally {
       setState(() {
         _isLoading = false;
         _isLoadingMore = false;
@@ -321,7 +328,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                                               time: transaction.time,
                                               status: transaction.status,
                                               amount: transaction.amount,
-                                              currency: transaction.currency,
+                                              currency: _currency,
                                               balance: transaction.balance,
                                               isPositive:
                                                   transaction.isPositive,

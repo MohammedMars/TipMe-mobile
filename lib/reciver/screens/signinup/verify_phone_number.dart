@@ -349,5 +349,6 @@ class _VerifyPhonePageState extends State<VerifyPhonePage> {
     await StorageService.save('user_token', data?.token);
     await StorageService.save('user_id', data?.id);
     await StorageService.save('mobile_number', widget.phoneNumber);
+    await StorageService.save('Currency', data?.currency);
   }
 }
