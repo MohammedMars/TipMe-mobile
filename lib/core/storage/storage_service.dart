@@ -21,4 +21,10 @@ class StorageService {
     final value = await get(key);
     return value != null && value.isNotEmpty;
   }
+
+  static Future<bool> clear() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    return true;
+  }
 }

@@ -78,15 +78,15 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
           Provider.of<ProfileSetupProvider>(context, listen: false);
 
       provider.update(
-        firstName: _firstNameController.text.trim(),
-        surName: _surnameController.text.trim(),
-        birthdate:
-            DateTime.tryParse(_dateOfBirthController.text) ?? DateTime.now(),
-        nationality: _selectedNationality!,
-        countryId: _selectedCountryId!,
-        cityId: _selectedCityId!,
-        bankCountryId: _selectedCountryId! // TODO:: Remove
-      );
+          firstName: _firstNameController.text.trim(),
+          surName: _surnameController.text.trim(),
+          birthdate:
+              DateTime.tryParse(_dateOfBirthController.text) ?? DateTime.now(),
+          nationality: _selectedNationality!,
+          countryId: _selectedCountryId!,
+          cityId: _selectedCityId!,
+          bankCountryId: _selectedCountryId! // TODO:: Remove
+          );
 
       Navigator.of(context).pushNamed(AppRoutes.documentUpload);
     }
@@ -235,12 +235,12 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                     ))
                 .toList(),
             onChanged: (value) {
-              final country = _countries.firstWhere((c) => c.name == value,
+              final country = _countries.firstWhere((c) => c.id == value,
                   orElse: () => _countries.first);
               setState(() {
                 _selectedCountryId = country.id;
+                _loadCities(country.id);
               });
-              _loadCities(country.id);
             },
             validator: (value) => (value == null)
                 ? languageService.getText('countryRequired')
