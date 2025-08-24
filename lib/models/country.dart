@@ -40,9 +40,8 @@ class Country {
       phoneCode: json['phoneCode'],
       nationality: json['nationality'],
       currency: json['currency'],
-      cities:
-          (json['cities'] as List).map((city) => City.fromJson(city)).toList(),
-      flag: json['flag'] ?? json['code'],
+      cities: (json['cities'] as List).map((city) => City.fromJson(city)).toList(),
+      flag: json['code'],
     );
   }
 }
