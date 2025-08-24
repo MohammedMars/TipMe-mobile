@@ -1,3 +1,4 @@
+//lib\reciver\screens\wallet\change_bank_account_details.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -63,6 +64,8 @@ class _ChangeBankAccountDetailsPageState
     super.initState();
     _loadLookups();
     _bankName = widget.bankName; // prefill bank name
+    _tipReceiverService =
+        TipReceiverService(sl<DioClient>(instanceName: 'TipReceiver'));
   }
 
   Future<void> _loadLookups() async {
@@ -84,13 +87,13 @@ class _ChangeBankAccountDetailsPageState
         bankName: _bankName ?? widget.bankName,
         bankCountryId: _selectedCountry!,
       );
-      
+
       final response = await _tipReceiverService.updatePaymentInfo(dto);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Bank account updated successfully")),
       );
-
-      Navigator.of(context).pop(response.data); // return updated info
+      Navigator.pushNamed(context, AppRoutes.walletScreen);
+      //Navigator.of(context).pop(response.data); // return updated info
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

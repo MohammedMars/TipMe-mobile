@@ -1,3 +1,4 @@
+//lib\dtos\paymentInfoDto.dart
 class PaymentInfoDto {
   final String accountHolderName;
   final String iban;
