@@ -13,6 +13,7 @@ import 'package:tipme_app/reciver/widgets/mainProfile_widgets/account_phone_inpu
 import 'package:tipme_app/reciver/widgets/mainProfile_widgets/action_button.dart';
 import 'package:tipme_app/reciver/widgets/mainProfile_widgets/bottom_sheet.dart';
 import 'package:tipme_app/data/services/language_service.dart';
+import 'package:tipme_app/reciver/widgets/phone_input.dart';
 import 'package:tipme_app/services/authTipReceiverService.dart';
 import 'package:tipme_app/services/tipReceiverService.dart';
 import 'package:tipme_app/utils/app_font.dart';
@@ -352,6 +353,13 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
                             onPhoneChanged: _onPhoneChanged,
                             onCountryChanged: _onCountryChanged,
                           ),
+                          // CustomPhoneInput(
+                          //   controller: _phoneController,
+                          //   onPhoneChanged: _onPhoneChanged,
+                          //   onCountryChanged: _onCountryChanged,
+                          //   phoneNumber: _phoneController.text,
+                          //   isVerified: true,
+                          // ),
                         ],
                       ),
                       const Spacer(),

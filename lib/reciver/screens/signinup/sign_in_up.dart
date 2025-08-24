@@ -62,7 +62,8 @@ class _SignInUpPageState extends State<SignInUpPage> {
       final fullPhoneNumber = '$cleanedCountryCode$cleanedPhoneNumber';
 
       try {
-        final service = AuthTipReceiverService(sl<DioClient>(instanceName: 'AuthTipReceiver'));
+        final service = AuthTipReceiverService(
+            sl<DioClient>(instanceName: 'AuthTipReceiver'));
         final dto = SignInUpDto(mobileNumber: fullPhoneNumber);
         final result = await service.signUp(dto);
 

@@ -1,7 +1,7 @@
 //lib\core\dio\service\api-service_path.dart
 class ApiServicePath {
-  static const fileServiceUrl = "http://localhost:5081/uploads";
-  static const baseUrl = "http://localhost:5081/api";
+  static const fileServiceUrl = "http://localhost:5000/uploads";
+  static const baseUrl = "http://localhost:5000/api";
   static const version = "v1"; // DONT CHANGE
   static get authTipReceiverPath => "${baseUrl}/${version}/AuthTipReceiver/";
   static get cacheServicePath => "${baseUrl}/${version}/Lookups/";

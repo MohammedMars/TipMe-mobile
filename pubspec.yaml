@@ -48,8 +48,8 @@ dependencies:
   hive: ^2.2.3
   signalr_netcore: ^0.1.7+2-nullsafety.3
   firebase_messaging: ^14.7.19
+  country_icons: ^2.0.0
   hive_flutter: ^1.1.0
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -76,6 +76,7 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/translation/
+    - assets/flags/
   fonts:
     - family: Quicksand
       fonts:
