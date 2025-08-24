@@ -131,38 +131,32 @@ class _WalletScreenState extends State<WalletScreen> {
   Future<dynamic> _getStatisticsForPeriod(String period) async {
     final now = DateTime.now();
     DateTime startDate;
-    DateTime endDate = now;
+    DateTime endDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
 
     switch (period) {
       case 'Daily':
-        // Today only
         startDate = DateTime(now.year, now.month, now.day);
         endDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
         return await _statisticsService.getTodayStatistics();
 
       case 'Weekly':
-        // Current week (suterday to now)
-        int daysFromSaturday = now.weekday;
-        startDate = now.subtract(Duration(days: daysFromSaturday));
-        startDate = DateTime(startDate.year, startDate.month, startDate.day);
-        break;
+        startDate = getStartOfCurrentWeekSaturday();
+        return await _statisticsService.getStatisticsCalculatedBetween(
+            startDate, endDate);
 
       case 'Monthly':
-        // enddate=now
         startDate = DateTime(now.year, now.month, 1);
-        break;
+        return await _statisticsService.getStatisticsCalculatedBetween(
+            startDate, endDate);
 
       case 'Yearly':
-        // enddate=now
         startDate = DateTime(now.year, 1, 1);
-        break;
+        return await _statisticsService.getStatisticsCalculatedBetween(
+            startDate, endDate);
 
       default:
         return await _statisticsService.getTodayStatistics();
     }
-
-    // For non-daily periods, use the range method
-    return await _statisticsService.getStatisticsBetween(startDate, endDate);
   }
 
   Future<void> _loadStatsForPeriod(String period) async {
@@ -221,6 +215,15 @@ class _WalletScreenState extends State<WalletScreen> {
 
   String _formatDateForApi(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
+  DateTime getStartOfCurrentWeekSaturday() {
+    DateTime now = DateTime.now();
+    // Remap weekdays so Saturday = 1, Sunday = 2, ..., Friday = 7
+    int customWeekday =
+        now.weekday == 6 ? 1 : (now.weekday == 7 ? 2 : now.weekday + 2);
+    return now.subtract(Duration(days: customWeekday - 1)).copyWith(
+        hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0);
   }
 
   void _updateChartData() {

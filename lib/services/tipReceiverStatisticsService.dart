@@ -63,6 +63,33 @@ class TipReceiverStatisticsService {
     );
   }
 
+  Future<ApiResponse<TipReceiverStatisticsData>> getStatisticsCalculatedBetween(
+      DateTime from, DateTime to) async {
+    String? user_id = await StorageService.get('user_id');
+    if (user_id == null) {
+      throw Exception('User ID not found');
+    }
+
+    // Create DateRangeDto
+    final dateRangeDto = DateRangeDto(from: from, to: to);
+
+    final response = await dioClient.post(
+      'CalculatedBetween/$user_id',
+      data: dateRangeDto.toJson(),
+      options: Options(
+        headers: {
+          'Authorization': 'Bearer ${await StorageService.get("user_token")}',
+        },
+      ),
+    );
+
+    return ApiResponse<TipReceiverStatisticsData>.fromJson(
+      response.data,
+      (data) => TipReceiverStatisticsData.fromJson(data),
+    );
+  }
+
+
   Future<ApiResponse> getBalance() async {
     String? userId = await StorageService.get('user_id');
     if (userId == null) {
