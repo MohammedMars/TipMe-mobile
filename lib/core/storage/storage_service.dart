@@ -1,4 +1,4 @@
-//lib\core\storage\token_storage_service.dart
+//lib\core\storage\storage_service.dart
 import 'package:shared_preferences/shared_preferences.dart';
 
 class StorageService {

@@ -1,6 +1,7 @@
 // lib/auth/screens/profile/profile_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:tipme_app/core/storage/storage_service.dart';
 import 'package:tipme_app/reciver/widgets/mainProfile_widgets/custom_list_card.dart';
 import 'package:tipme_app/reciver/widgets/wallet_widgets/custom_top_bar.dart';
 import 'package:tipme_app/routs/app_routs.dart';
@@ -251,8 +252,24 @@ class ProfilePage extends StatelessWidget {
               ),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.of(context).pop();
+
+                try {
+                  await StorageService.clear();
+
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    AppRoutes.signInUp,
+                    (route) => false,
+                  );
+                } catch (error) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to sign out. Please try again.'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               },
               child: Text(
                 'Sign Out',

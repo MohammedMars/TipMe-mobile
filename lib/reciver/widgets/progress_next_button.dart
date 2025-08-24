@@ -56,13 +56,16 @@ class ProgressNextButton extends StatelessWidget {
                       ]
                     : null,
               ),
-              child: SvgPicture.asset(
-                'assets/icons/arrow-right.svg',
-                width: 16,
-                height: 16,
-                colorFilter: const ColorFilter.mode(
-                  AppColors.white,
-                  BlendMode.srcIn,
+              child: Center(
+                child: SvgPicture.asset(
+                  'assets/icons/arrow-right.svg',
+                  fit: BoxFit.scaleDown,
+                  width: 20,
+                  height: 20,
+                  colorFilter: const ColorFilter.mode(
+                    AppColors.white,
+                    BlendMode.srcIn,
+                  ),
                 ),
               ),
             ),

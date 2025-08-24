@@ -193,11 +193,16 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
             controller: _dateOfBirthController,
             readOnly: true,
             onTap: _selectDate,
-            suffixIcon: SvgPicture.asset(
-              'assets/icons/calendar-week.svg',
-              width: 16,
-              height: 16,
-              color: AppColors.text,
+            suffixIcon: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: SvgPicture.asset(
+                  'assets/icons/calendar-week.svg',
+                  color: AppColors.text,
+                ),
+              ),
             ),
             validator: (value) => (value?.isEmpty ?? true)
                 ? languageService.getText('dateOfBirthRequired')
