@@ -1,5 +1,5 @@
-import 'dart:typed_data';
-
+import 'package:flutter/services.dart' show ByteData, Uint8List, rootBundle;
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tipme_app/core/dio/client/dio_client.dart';
@@ -31,7 +31,7 @@ class _QRGeneratorScreenState extends State<QRGeneratorScreen> {
   QRCodeService? qrCodeService;
 
   @override
-  void initState()  {
+  void initState() {
     super.initState();
     _initializeService();
     _loadExistingQRCode();
@@ -42,7 +42,6 @@ class _QRGeneratorScreenState extends State<QRGeneratorScreen> {
   }
 
   Future<void> _loadExistingQRCode() async {
-    
     setState(() {
       isLoading = true;
       errorMessage = null;
@@ -52,7 +51,6 @@ class _QRGeneratorScreenState extends State<QRGeneratorScreen> {
       final response = await qrCodeService?.getQRCode();
 
       if (response != null && response.success) {
-        // Assuming QRCodeData has a qrCodeBase64 property
         final base64Data = response.data?.qrCodeBase64;
 
         if (base64Data != null && base64Data.isNotEmpty) {
@@ -61,56 +59,73 @@ class _QRGeneratorScreenState extends State<QRGeneratorScreen> {
           final mime = QRUtils.detectMime(bytes);
           final dataUri = QRUtils.buildDataUri(normalizedForUri, mime);
 
-          setState(() {
-            qrImageBytes = bytes;
-            qrDataUri = dataUri;
-            isFirstGeneration = false;
-          });
+          // Navigate to qr_flow if not first generation
+          if (mounted) {
+            Navigator.pushReplacementNamed(context, AppRoutes.logInQRHome);
+          }
+          return;
         } else {
           // No existing QR code, show placeholder
-          _setPlaceholderQRCode();
+          await _setPlaceholderQRCode();
         }
       } else {
         // API call succeeded but returned non-success response
-        _setPlaceholderQRCode();
+        await _setPlaceholderQRCode();
       }
     } catch (e) {
       // Error loading QR code, show placeholder
-      _setPlaceholderQRCode();
+      await _setPlaceholderQRCode();
       print('Error loading QR code: $e');
     } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _setPlaceholderQRCode() async {
+    final placeholderText = "Tap Generate to create your QR code";
+    final placeholderBytes = await _createPlaceholderQRCode(placeholderText);
+
+    if (mounted) {
       setState(() {
-        isLoading = false;
+        qrImageBytes = placeholderBytes;
+        qrDataUri = null; // No data URI for placeholder
+        isFirstGeneration = true;
       });
     }
   }
 
-  void _setPlaceholderQRCode() {
-    final placeholderText = "Tap Generate to create your QR code";
-    final placeholderBytes = _createPlaceholderQRCode(placeholderText);
-
-    setState(() {
-      qrImageBytes = placeholderBytes;
-      qrDataUri = null; // No data URI for placeholder
-      isFirstGeneration = true;
-    });
-  }
-
-  Uint8List _createPlaceholderQRCode(String text) {
-    
-    // This is a simplified example - you might want to use a proper QR generator
-    // or a placeholder image asset
-    final code =
-        '''
-      <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
-        <rect width="200" height="200" fill="#f0f0f0" />
-        <text x="100" y="100" text-anchor="middle" fill="#666">QR Code</text>
-        <text x="100" y="120" text-anchor="middle" fill="#666" font-size="10">Tap to Generate</text>
-      </svg>
-    ''';
-
-    // Convert SVG to bytes (simplified - in practice you might use a proper converter)
-    return Uint8List.fromList(code.codeUnits);
+  Future<Uint8List> _createPlaceholderQRCode(String text) async {
+    try {
+      // Load the image from assets
+      final ByteData data =
+          await rootBundle.load('assets/images/default_qr.jpeg');
+      return data.buffer.asUint8List();
+    } catch (e) {
+      debugPrint('Error loading placeholder image: $e');
+      // Fallback to a simple colored placeholder if image loading fails
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      final paint = Paint()..color = Colors.grey[300]!;
+      const size = 300.0;
+      canvas.drawRRect(
+        RRect.fromRectAndCorners(
+          const Rect.fromLTWH(0, 0, size, size),
+          topLeft: const Radius.circular(8),
+          topRight: const Radius.circular(8),
+          bottomLeft: const Radius.circular(8),
+          bottomRight: const Radius.circular(8),
+        ),
+        paint,
+      );
+      final picture = recorder.endRecording();
+      final img = await picture.toImage(size.toInt(), size.toInt());
+      final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
+      return byteData!.buffer.asUint8List();
+    }
   }
 
   @override

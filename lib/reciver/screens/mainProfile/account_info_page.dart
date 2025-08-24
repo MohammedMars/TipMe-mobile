@@ -45,7 +45,7 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
   String? _userId;
   String? _imagePath;
   File? _imageFile;
-  Uint8List? _imageBytes; // للويب
+  Uint8List? _imageBytes;
   String? _imageUrl;
   bool _isImageChanged = false;
 

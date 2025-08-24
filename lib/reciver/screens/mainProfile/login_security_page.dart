@@ -5,7 +5,7 @@ import 'package:tipme_app/core/dio/client/dio_client.dart';
 import 'package:tipme_app/di/gitIt.dart';
 import 'package:tipme_app/reciver/widgets/mainProfile_widgets/switch_card.dart';
 import 'package:tipme_app/reciver/widgets/wallet_widgets/custom_top_bar.dart';
-import 'package:tipme_app/services/settings_service.dart';
+import 'package:tipme_app/services/settingsService.dart';
 import 'package:tipme_app/utils/app_font.dart';
 import 'package:tipme_app/utils/colors.dart';
 import 'package:tipme_app/data/services/language_service.dart';

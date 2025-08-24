@@ -75,6 +75,11 @@ class _ChangeBankAccountDetailsPageState
     });
   }
 
+  void initService() {
+    _tipReceiverService =
+        TipReceiverService(sl<DioClient>(instanceName: 'TipReceiver'));
+  }
+
   Future<void> _onSave() async {
     if (!_isFormValid || !_formKey.currentState!.validate()) return;
 

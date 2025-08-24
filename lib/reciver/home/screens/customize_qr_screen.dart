@@ -271,7 +271,6 @@ class _CustomizeQrScreenState extends State<CustomizeQrScreen> {
         // Decode the base64 response to get the new QR code bytes
         final base64Data = response.data?.qrCodeBase64;
         if (base64Data != null && base64Data.isNotEmpty) {
-          // You'll need to implement base64 decoding similar to your other screen
           final bytes = _decodeBase64(base64Data);
 
           setState(() {
@@ -279,6 +278,13 @@ class _CustomizeQrScreenState extends State<CustomizeQrScreen> {
           });
 
           _showSnackbar("QR code updated with logo successfully!");
+          
+          // Navigate back to home screen after a short delay
+          if (mounted) {
+            Future.delayed(const Duration(milliseconds: 1500), () {
+              Navigator.of(context).pop();
+            });
+          }
         } else {
           throw 'Failed to generate QR code with logo';
         }

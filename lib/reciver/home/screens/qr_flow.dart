@@ -301,51 +301,11 @@ class _HomeScreenState extends State<HomeScreen> {
         color: AppColors.gray_bg_2,
       ),
       child: Center(
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            QRContent(
-              isGenerating: false,
-              qrImageBytes: qrBytes,
-              qrDataUri: null, // We're using bytes directly from backend
-              errorMessage: null,
-            ),
-            _buildLogoOverlay(logoToShow),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLogoOverlay(Uint8List? logoToShow) {
-    return Container(
-      width: 54,
-      height: 54,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.black, width: 2),
-      ),
-      child: Center(
-        child: Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: AppColors.primary, width: 1),
-          ),
-          child: Center(
-            child: SizedBox(
-              width: 45,
-              height: 45,
-              child: ClipOval(
-                child: logoToShow != null
-                    ? Image.memory(logoToShow, fit: BoxFit.contain)
-                    : Image.asset("assets/images/Group_39258.png",
-                        fit: BoxFit.contain),
-              ),
-            ),
-          ),
+        child: QRContent(
+          isGenerating: false,
+          qrImageBytes: qrBytes,
+          qrDataUri: null,
+          errorMessage: null,
         ),
       ),
     );
@@ -616,7 +576,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _openCustomize() async {
     final user_id = await StorageService.get('user_id');
     // ignore: use_build_context_synchronously
-    final result = await Navigator.push<Map<String, dynamic>?>(
+    await Navigator.push<Map<String, dynamic>?>(
       context,
       MaterialPageRoute(
         builder: (_) => CustomizeQrScreen(
@@ -629,19 +589,11 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
 
-    if (result != null) {
-      setState(() {
-        qrBytes = result["qr"] as Uint8List?;
-        logoBytes = result["logo"] as Uint8List?;
-      });
-
-      if (logoBytes != null) {
-        await _saveLogo(logoBytes!);
-      }
-
-      // Reload QR code from backend after customization
-      _loadQRCodeFromBackend();
-    }
+    // Always refresh the QR code from backend when returning
+    await _loadQRCodeFromBackend();
+    
+    // Also refresh the logo in case it was updated
+    await _loadSavedLogo();
   }
 
   Future<void> _saveLogo(Uint8List bytes) async {
