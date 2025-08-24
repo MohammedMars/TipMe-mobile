@@ -42,7 +42,7 @@ class Country {
       currency: json['currency'],
       cities:
           (json['cities'] as List).map((city) => City.fromJson(city)).toList(),
-      flag: json['flag'] ?? json['code']?.toFlag,
+      flag: json['flag'] ?? json['code'],
     );
   }
 }

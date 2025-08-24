@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:get_it/get_it.dart';
+import 'package:tipme_app/core/dio/client/dio_client.dart';
+import 'package:tipme_app/di/gitIt.dart';
 import 'package:tipme_app/reciver/screens/mainProfile/help_support_page.dart';
 import 'package:tipme_app/reciver/widgets/mainProfile_widgets/custom_list_card.dart';
+import 'package:tipme_app/services/appSettingsService.dart';
+import 'package:tipme_app/viewModels/apiResponse.dart';
+import 'package:tipme_app/viewModels/contactSupportData.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:tipme_app/utils/app_font.dart';
 import 'package:tipme_app/utils/colors.dart';
 
-class ContactSupportBottomSheet extends StatelessWidget {
+class ContactSupportBottomSheet extends StatefulWidget {
   const ContactSupportBottomSheet({Key? key}) : super(key: key);
 
   static void show(BuildContext context) {
@@ -16,6 +22,23 @@ class ContactSupportBottomSheet extends StatelessWidget {
       isScrollControlled: true,
       builder: (context) => const ContactSupportBottomSheet(),
     );
+  }
+
+  @override
+  State<ContactSupportBottomSheet> createState() =>
+      _ContactSupportBottomSheetState();
+}
+
+class _ContactSupportBottomSheetState extends State<ContactSupportBottomSheet> {
+  late final AppSettingsService _appSettingsService;
+  Future<ApiResponse<ContactSupportData>?>? _contactSupportFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _appSettingsService =
+        AppSettingsService(sl<DioClient>(instanceName: 'AppSettings'));
+    _contactSupportFuture = _appSettingsService.getContactSupport();
   }
 
   @override
@@ -41,20 +64,47 @@ class ContactSupportBottomSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          _ContactCard(
-            title: 'WhatsApp Us',
-            subtitle: 'Reach us anytime for support.',
-            backgroundColor: const Color(0xFF25D366),
-            iconPath: 'assets/icons/brand-whatsapp.svg',
-            onTap: () => _launchWhatsApp(),
-          ),
-          const SizedBox(height: 16),
-          _ContactCard(
-            title: '12 345 6789',
-            subtitle: 'For quick help, give us a call.',
-            backgroundColor: const Color(0xFF007AFF),
-            iconPath: 'assets/icons/phone-call.svg',
-            onTap: () => _makePhoneCall('1234567891'),
+          FutureBuilder<ApiResponse<ContactSupportData>?>(
+            future: _contactSupportFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 40.0),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+
+              if (snapshot.hasError ||
+                  !snapshot.hasData ||
+                  !snapshot.data!.success) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 40.0),
+                  child: Center(child: Text('Could not load contact info')),
+                );
+              }
+
+              final contactData = snapshot.data!.data!;
+
+              return Column(
+                children: [
+                  _ContactCard(
+                    title: 'WhatsApp Us',
+                    subtitle: 'Reach us anytime for support.',
+                    backgroundColor: const Color(0xFF25D366),
+                    iconPath: 'assets/icons/brand-whatsapp.svg',
+                    onTap: () => _launchWhatsApp(contactData.whatsAppNumber),
+                  ),
+                  const SizedBox(height: 16),
+                  _ContactCard(
+                    title: contactData.phoneNumber,
+                    subtitle: 'For quick help, give us a call.',
+                    backgroundColor: const Color(0xFF007AFF),
+                    iconPath: 'assets/icons/phone-call.svg',
+                    onTap: () => _makePhoneCall(contactData.phoneNumber),
+                  ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 32),
         ],
@@ -62,8 +112,7 @@ class ContactSupportBottomSheet extends StatelessWidget {
     );
   }
 
-  static Future<void> _launchWhatsApp() async {
-    const phoneNumber = '+1234567891';
+  static Future<void> _launchWhatsApp(String phoneNumber) async {
     const message = 'Hello, I need support with TipMe app.';
     final uri = Uri.parse(
         'https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}');
