@@ -1,3 +1,4 @@
+//lib\services\tipReceiverService.dart
 import 'package:tipme_app/core/dio/client/dio_client.dart';
 import 'package:tipme_app/core/storage/storage_service.dart';
 import 'package:tipme_app/dtos/paymentInfoDto.dart';

@@ -1,4 +1,3 @@
-//lib\reciver\auth\screens\wallet\wallet.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
@@ -32,9 +31,10 @@ class WalletScreen extends StatefulWidget {
 }
 
 class _WalletScreenState extends State<WalletScreen> {
-  final String _selectedStatsPeriod = 'Daily';
+  String _selectedStatsPeriod = 'Daily';
   String _selectedTipsPeriod = 'Last week';
   DateTimeRange? _selectedDateRange;
+  DateTimeRange? _selectedStatsDateRange;
   final bool _showPendingVerification = false;
   final bool _showNotifications = true;
   int _currentBottomNavIndex = 1;
@@ -49,6 +49,7 @@ class _WalletScreenState extends State<WalletScreen> {
   TipReceiverStatisticsData? _statisticsData;
   bool _isLoading = true;
   bool _isLoadingChart = false;
+  bool _isLoadingStats = false;
   String? _errorMessage;
 
   // Chart data
@@ -113,9 +114,10 @@ class _WalletScreenState extends State<WalletScreen> {
 
   Future<void> _loadStatistics() async {
     try {
-      final response = await _statisticsService.getTodayStatistics();
+      final response = await _getStatisticsForPeriod(_selectedStatsPeriod);
 
-      if (response.success == true || response.data != null) {
+      if (response != null &&
+          (response.success == true || response.data != null)) {
         setState(() {
           _statisticsData = response.data;
         });
@@ -123,6 +125,66 @@ class _WalletScreenState extends State<WalletScreen> {
       await _loadLast7DaysStatistics();
     } catch (e) {
       print('Error loading statistics: $e');
+    }
+  }
+
+  Future<dynamic> _getStatisticsForPeriod(String period) async {
+    final now = DateTime.now();
+    DateTime startDate;
+    DateTime endDate = now;
+
+    switch (period) {
+      case 'Daily':
+        // Today only
+        startDate = DateTime(now.year, now.month, now.day);
+        endDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
+        return await _statisticsService.getTodayStatistics();
+
+      case 'Weekly':
+        // Current week (suterday to now)
+        int daysFromSaturday = now.weekday;
+        startDate = now.subtract(Duration(days: daysFromSaturday));
+        startDate = DateTime(startDate.year, startDate.month, startDate.day);
+        break;
+
+      case 'Monthly':
+        // enddate=now
+        startDate = DateTime(now.year, now.month, 1);
+        break;
+
+      case 'Yearly':
+        // enddate=now
+        startDate = DateTime(now.year, 1, 1);
+        break;
+
+      default:
+        return await _statisticsService.getTodayStatistics();
+    }
+
+    // For non-daily periods, use the range method
+    return await _statisticsService.getStatisticsBetween(startDate, endDate);
+  }
+
+  Future<void> _loadStatsForPeriod(String period) async {
+    setState(() {
+      _isLoadingStats = true;
+    });
+
+    try {
+      final response = await _getStatisticsForPeriod(period);
+
+      if (response != null &&
+          (response.success == true || response.data != null)) {
+        setState(() {
+          _statisticsData = response.data;
+        });
+      }
+    } catch (e) {
+      print('Error loading statistics for period $period: $e');
+    } finally {
+      setState(() {
+        _isLoadingStats = false;
+      });
     }
   }
 
@@ -391,7 +453,12 @@ class _WalletScreenState extends State<WalletScreen> {
       children: [
         _buildStatsHeader(languageService),
         const SizedBox(height: 24),
-        _buildStatsGrid(languageService),
+        _isLoadingStats
+            ? Container(
+                height: 200,
+                child: Center(child: CircularProgressIndicator()),
+              )
+            : _buildStatsGrid(languageService),
       ],
     );
   }
@@ -404,27 +471,20 @@ class _WalletScreenState extends State<WalletScreen> {
           languageService.getText('myStats'),
           style: AppFonts.mdBold(context, color: Colors.black),
         ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                languageService.getText(_selectedStatsPeriod.toLowerCase()),
-                style: AppFonts.smSemiBold(context, color: Colors.black87),
-              ),
-              const SizedBox(width: 4),
-              SvgPicture.asset(
-                'assets/images/caret-down.svg',
-                width: 16,
-                height: 16,
-                colorFilter: const ColorFilter.mode(
-                  AppColors.white,
-                  BlendMode.srcIn,
-                ),
-              ),
-            ],
-          ),
+        StatsPeriodDropdown(
+          selectedPeriod: _selectedStatsPeriod,
+          onPeriodChanged: (period) {
+            setState(() {
+              _selectedStatsPeriod = period;
+            });
+            _loadStatsForPeriod(period);
+          },
+          onDateRangeSelected: (dateRange) {
+            setState(() {
+              _selectedStatsDateRange = dateRange;
+            });
+            // Handle custom date range if needed
+          },
         ),
       ],
     );
@@ -601,5 +661,217 @@ class _WalletScreenState extends State<WalletScreen> {
         Navigator.pushNamed(context, AppRoutes.transactions);
         break;
     }
+  }
+}
+
+// New StatsPeriodDropdown widget specifically for stats
+class StatsPeriodDropdown extends StatefulWidget {
+  final String selectedPeriod;
+  final Function(String) onPeriodChanged;
+  final Function(DateTimeRange?)? onDateRangeSelected;
+
+  const StatsPeriodDropdown({
+    Key? key,
+    required this.selectedPeriod,
+    required this.onPeriodChanged,
+    this.onDateRangeSelected,
+  }) : super(key: key);
+
+  @override
+  State<StatsPeriodDropdown> createState() => _StatsPeriodDropdownState();
+}
+
+class _StatsPeriodDropdownState extends State<StatsPeriodDropdown> {
+  bool _isDropdownOpen = false;
+  final GlobalKey _dropdownKey = GlobalKey();
+  OverlayEntry? _overlayEntry;
+  final List<String> _periods = ['Daily', 'Weekly', 'Monthly', 'Yearly'];
+
+  void _toggleDropdown() {
+    if (_isDropdownOpen) {
+      _closeDropdown();
+    } else {
+      _openDropdown();
+    }
+  }
+
+  void _openDropdown() {
+    final languageService =
+        Provider.of<LanguageService>(context, listen: false);
+    final RenderBox renderBox =
+        _dropdownKey.currentContext!.findRenderObject() as RenderBox;
+    final size = renderBox.size;
+    final position = renderBox.localToGlobal(Offset.zero);
+
+    _overlayEntry = OverlayEntry(
+      builder: (context) => GestureDetector(
+        onTap: _closeDropdown,
+        behavior: HitTestBehavior.translucent,
+        child: Stack(
+          children: [
+            Positioned(
+              left: position.dx,
+              top: position.dy + size.height + 4,
+              width: size.width,
+              child: Material(
+                elevation: 4,
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.border_2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: _periods.asMap().entries.map((entry) {
+                      int index = entry.key;
+                      String period = entry.value;
+
+                      String localizedPeriod;
+                      switch (period) {
+                        case 'Daily':
+                          localizedPeriod = languageService.getText('daily');
+                          break;
+                        case 'Weekly':
+                          localizedPeriod = languageService.getText('weekly');
+                          break;
+                        case 'Monthly':
+                          localizedPeriod = languageService.getText('monthly');
+                          break;
+                        case 'Yearly':
+                          localizedPeriod = languageService.getText('yearly');
+                          break;
+                        default:
+                          localizedPeriod = period;
+                      }
+
+                      return SizedBox(
+                        width: double.infinity,
+                        child: InkWell(
+                          onTap: () => _selectPeriod(period),
+                          borderRadius: index == 0
+                              ? const BorderRadius.only(
+                                  topLeft: Radius.circular(8),
+                                  topRight: Radius.circular(8),
+                                )
+                              : index == _periods.length - 1
+                                  ? const BorderRadius.only(
+                                      bottomLeft: Radius.circular(8),
+                                      bottomRight: Radius.circular(8),
+                                    )
+                                  : null,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
+                            decoration: BoxDecoration(
+                              border: index < _periods.length - 1
+                                  ? const Border(
+                                      bottom: BorderSide(
+                                        color: AppColors.border_2,
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                            child: Text(
+                              localizedPeriod,
+                              style: AppFonts.smMedium(
+                                context,
+                                color: period == widget.selectedPeriod
+                                    ? AppColors.primary
+                                    : Colors.black87,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    Overlay.of(context).insert(_overlayEntry!);
+    setState(() {
+      _isDropdownOpen = true;
+    });
+  }
+
+  void _closeDropdown() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+    setState(() {
+      _isDropdownOpen = false;
+    });
+  }
+
+  void _selectPeriod(String period) {
+    _closeDropdown();
+    widget.onPeriodChanged(period);
+  }
+
+  @override
+  void dispose() {
+    _overlayEntry?.remove();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final languageService = Provider.of<LanguageService>(context);
+
+    String displayText;
+    switch (widget.selectedPeriod) {
+      case 'Daily':
+        displayText = languageService.getText('daily');
+        break;
+      case 'Weekly':
+        displayText = languageService.getText('weekly');
+        break;
+      case 'Monthly':
+        displayText = languageService.getText('monthly');
+        break;
+      case 'Yearly':
+        displayText = languageService.getText('yearly');
+        break;
+      default:
+        displayText = widget.selectedPeriod;
+    }
+
+    return GestureDetector(
+      key: _dropdownKey,
+      onTap: _toggleDropdown,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            Text(
+              displayText,
+              style: AppFonts.smMedium(context, color: Colors.black87),
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              _isDropdownOpen
+                  ? Icons.keyboard_arrow_up
+                  : Icons.keyboard_arrow_down,
+              size: 16,
+              color: Colors.black87,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
