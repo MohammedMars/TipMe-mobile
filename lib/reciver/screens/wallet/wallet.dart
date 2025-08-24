@@ -392,7 +392,7 @@ class _WalletScreenState extends State<WalletScreen> {
               ],
             ),
             const Positioned(
-              top: 120,
+              top: 100,
               left: 0,
               right: 0,
               child: AvailableBalanceCard(
@@ -402,6 +402,7 @@ class _WalletScreenState extends State<WalletScreen> {
                 helpTitleKey: 'myTransfers',
                 helpParagraphKeys: ['transferScheduleDescription'],
                 helpButtonTextKey: 'close',
+                showTransferDate: true,
               ),
             ),
           ],

@@ -17,16 +17,18 @@ class AvailableBalanceCard extends StatefulWidget {
   final String? helpTitleKey;
   final List<String>? helpParagraphKeys;
   final String? helpButtonTextKey;
+  final bool showTransferDate; // New parameter to control visibility
 
-  const AvailableBalanceCard(
-      {Key? key,
-      required this.transferDate,
-      this.backgroundImagePath,
-      this.iconPath,
-      this.helpTitleKey,
-      this.helpParagraphKeys,
-      this.helpButtonTextKey})
-      : super(key: key);
+  const AvailableBalanceCard({
+    Key? key,
+    required this.transferDate,
+    this.backgroundImagePath,
+    this.iconPath,
+    this.helpTitleKey,
+    this.helpParagraphKeys,
+    this.helpButtonTextKey,
+    this.showTransferDate = true, // Default to true for backward compatibility
+  }) : super(key: key);
 
   @override
   State<AvailableBalanceCard> createState() => _AvailableBalanceCardState();
@@ -37,15 +39,18 @@ class _AvailableBalanceCardState extends State<AvailableBalanceCard> {
   bool loading = true;
   late TipReceiverStatisticsService _statisticsService;
   var _currency = "";
+
   @override
   void initState() {
     super.initState();
     _initializeScreen();
     _fetchBalance();
   }
+
   Future<void> _initializeScreen() async {
     _currency = await StorageService.get('Currency') ?? "";
   }
+
   Future<void> _fetchBalance() async {
     try {
       _statisticsService = TipReceiverStatisticsService(
@@ -80,8 +85,9 @@ class _AvailableBalanceCardState extends State<AvailableBalanceCard> {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      padding: const EdgeInsets.all(20),
+      height: 136, // Fixed height to maintain consistency
+      margin: const EdgeInsets.symmetric(horizontal: 32),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         image: widget.backgroundImagePath != null
@@ -92,6 +98,9 @@ class _AvailableBalanceCardState extends State<AvailableBalanceCard> {
             : null,
       ),
       child: Column(
+        mainAxisAlignment: widget.showTransferDate
+            ? MainAxisAlignment.start
+            : MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -129,38 +138,41 @@ class _AvailableBalanceCardState extends State<AvailableBalanceCard> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Text(
-                widget.transferDate,
-                style: AppFonts.smMedium(context, color: AppColors.white),
-              ),
-              const SizedBox(width: 12),
-              GestureDetector(
-                onTap: () => _showHelpSheet(context),
-                child: Container(
-                  width: 16,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.3),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: SvgPicture.asset(
-                      'assets/icons/info-circle.svg',
-                      width: 10,
-                      height: 10,
-                      colorFilter: const ColorFilter.mode(
-                        Colors.white,
-                        BlendMode.srcIn,
+          // Conditionally show the transfer date section
+          if (widget.showTransferDate) ...[
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Text(
+                  widget.transferDate,
+                  style: AppFonts.smMedium(context, color: AppColors.white),
+                ),
+                const SizedBox(width: 12),
+                GestureDetector(
+                  onTap: () => _showHelpSheet(context),
+                  child: Container(
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.3),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: SvgPicture.asset(
+                        'assets/icons/info-circle.svg',
+                        width: 10,
+                        height: 10,
+                        colorFilter: const ColorFilter.mode(
+                          Colors.white,
+                          BlendMode.srcIn,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ],
       ),
     );
