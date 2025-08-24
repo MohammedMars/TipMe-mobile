@@ -1,5 +1,4 @@
 //lib\reciver\auth\widgets\document_upload_card.dart
-//lib\reciver\auth\widgets\document_upload_card.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
@@ -107,17 +106,21 @@ class DocumentUploadCard extends StatelessWidget {
         );
 
       case UploadState.showingCheck:
-        return SizedBox(
-          width: 80,
-          height: 80,
-          child: SvgPicture.asset(
-            'assets/icons/circle-check-empty.svg',
-            width: 80,
-            height: 80,
-            colorFilter: const ColorFilter.mode(
-              AppColors.success_400,
-              BlendMode.srcIn,
+        return Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: AppColors.success_400,
+              width: 3,
             ),
+            color: Colors.transparent,
+          ),
+          child: const Icon(
+            Icons.check,
+            size: 30,
+            color: AppColors.success_400,
           ),
         );
 
@@ -177,17 +180,21 @@ class DocumentUploadCard extends StatelessWidget {
                   );
                 },
               )
-            : SizedBox(
-                width: 80,
-                height: 80,
-                child: SvgPicture.asset(
-                  'assets/icons/circle-check-empty.svg',
-                  width: 80,
-                  height: 80,
-                  colorFilter: const ColorFilter.mode(
-                    AppColors.success_400,
-                    BlendMode.srcIn,
+            : Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.success_400,
+                    width: 3,
                   ),
+                  color: Colors.transparent,
+                ),
+                child: const Icon(
+                  Icons.check,
+                  size: 30,
+                  color: AppColors.success_400,
                 ),
               );
     }
