@@ -1,10 +1,16 @@
-// lib/auth/screens/profile/report_problem_page.dart
+// lib/reciver/screens/mainProfile/report_problem_page.dart
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 import 'package:provider/provider.dart';
+import 'package:tipme_app/core/dio/client/dio_client.dart';
+import 'package:tipme_app/core/storage/storage_service.dart';
+import 'package:tipme_app/dtos/CreateSupportIssueDto.dart';
+import 'package:tipme_app/enums/support_issue_type.dart';
 import 'package:tipme_app/reciver/widgets/mainProfile_widgets/bottom_sheet.dart';
 import 'package:tipme_app/reciver/widgets/mainProfile_widgets/custom_list_card.dart';
 import 'package:tipme_app/reciver/widgets/wallet_widgets/custom_top_bar.dart';
 import 'package:tipme_app/reciver/widgets/custom_button.dart';
+import 'package:tipme_app/services/supportIssueService.dart';
 import 'package:tipme_app/utils/app_font.dart';
 import 'package:tipme_app/utils/colors.dart';
 import 'package:tipme_app/data/services/language_service.dart';
@@ -17,8 +23,17 @@ class ReportProblemPage extends StatefulWidget {
 }
 
 class _ReportProblemPageState extends State<ReportProblemPage> {
-  String selectedProblem = 'bank_account';
+  SupportIssueType selectedProblem = SupportIssueType.BankAccount;
   final TextEditingController _problemController = TextEditingController();
+  late final SupportIssueService _supportIssueService;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _supportIssueService =
+        SupportIssueService(GetIt.instance<DioClient>(instanceName: 'SupportIssue'));
+  }
 
   @override
   void dispose() {
@@ -26,7 +41,7 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
     super.dispose();
   }
 
-  void _submitTicket() {
+  void _submitTicket() async {
     // Validate input
     if (_problemController.text.trim().isEmpty) {
       // Show error message if description is empty
@@ -39,35 +54,66 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
       return;
     }
 
-    print('Selected Problem: $selectedProblem');
-    print('Description: ${_problemController.text}');
+    setState(() {
+      _isLoading = true;
+    });
 
-    SuccessBottomSheet.show(
-      context,
-      titleKey: 'Submit Successfully',
-      descriptionKey:
-          'Thank you for reporting the issue! Our team will review it and get back to you soon.',
-      primaryButtonTextKey: 'Report New Issue',
-      secondaryButtonTextKey: 'Close',
-      icon: Icons.check,
-      iconColor: AppColors.success,
-      iconBackgroundColor: AppColors.white,
-      primaryButtonColor: AppColors.primary,
-      primaryButtonTextColor: AppColors.white,
-      secondaryButtonBorderColor: AppColors.secondary,
-      secondaryButtonTextColor: AppColors.secondary,
-      onPrimaryButtonPressed: () {
-        Navigator.pop(context);
-        setState(() {
-          selectedProblem = 'bank_account';
-          _problemController.clear();
-        });
-      },
-      onSecondaryButtonPressed: () {
-        Navigator.pop(context);
-        Navigator.pop(context);
-      },
-    );
+    try {
+      final userId = await StorageService.get('user_id');
+      if (userId == null) {
+        throw Exception('User not logged in');
+      }
+
+      final dto = CreateSupportIssueDto(
+        tipReceiverId: userId,
+        issueType: selectedProblem,
+        description: _problemController.text,
+      );
+
+      final response = await _supportIssueService.createSupportIssue(dto);
+
+      if (response != null && response.success) {
+        SuccessBottomSheet.show(
+          context,
+          titleKey: 'Submit Successfully',
+          descriptionKey:
+              'Thank you for reporting the issue! Our team will review it and get back to you soon.',
+          primaryButtonTextKey: 'Report New Issue',
+          secondaryButtonTextKey: 'Close',
+          icon: Icons.check,
+          iconColor: AppColors.success,
+          iconBackgroundColor: AppColors.white,
+          primaryButtonColor: AppColors.primary,
+          primaryButtonTextColor: AppColors.white,
+          secondaryButtonBorderColor: AppColors.secondary,
+          secondaryButtonTextColor: AppColors.secondary,
+          onPrimaryButtonPressed: () {
+            Navigator.pop(context);
+            setState(() {
+              selectedProblem = SupportIssueType.BankAccount;
+              _problemController.clear();
+            });
+          },
+          onSecondaryButtonPressed: () {
+            Navigator.pop(context);
+            Navigator.pop(context);
+          },
+        );
+      } else {
+        throw Exception('Failed to create support issue');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -133,17 +179,17 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
                                     AppColors.secondary_500.withOpacity(0.1),
                                 borderType: CardBorderType.all,
                                 borderRadius: 16.0,
-                                borderColor: selectedProblem == 'payment'
+                                borderColor: selectedProblem == SupportIssueType.Payment
                                     ? AppColors.primary
                                     : AppColors.border_2,
-                                backgroundColor: selectedProblem == 'payment'
+                                backgroundColor: selectedProblem == SupportIssueType.Payment
                                     ? AppColors.primary.withOpacity(0.1)
                                     : Colors.transparent,
                                 trailingType: TrailingType.radio,
-                                isSelected: selectedProblem == 'payment',
+                                isSelected: selectedProblem == SupportIssueType.Payment,
                                 onTap: () {
                                   setState(() {
-                                    selectedProblem = 'payment';
+                                    selectedProblem = SupportIssueType.Payment;
                                   });
                                 },
                                 padding: const EdgeInsets.all(16),
@@ -159,18 +205,18 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
                                     AppColors.secondary_500.withOpacity(0.1),
                                 borderType: CardBorderType.all,
                                 borderRadius: 16.0,
-                                borderColor: selectedProblem == 'bank_account'
+                                borderColor: selectedProblem == SupportIssueType.BankAccount
                                     ? AppColors.primary
                                     : AppColors.border_2,
                                 backgroundColor:
-                                    selectedProblem == 'bank_account'
+                                    selectedProblem == SupportIssueType.BankAccount
                                         ? AppColors.primary.withOpacity(0.1)
                                         : Colors.transparent,
                                 trailingType: TrailingType.radio,
-                                isSelected: selectedProblem == 'bank_account',
+                                isSelected: selectedProblem == SupportIssueType.BankAccount,
                                 onTap: () {
                                   setState(() {
-                                    selectedProblem = 'bank_account';
+                                    selectedProblem = SupportIssueType.BankAccount;
                                   });
                                 },
                                 padding: const EdgeInsets.all(16),
@@ -186,17 +232,17 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
                                     AppColors.secondary_500.withOpacity(0.1),
                                 borderType: CardBorderType.all,
                                 borderRadius: 16.0,
-                                borderColor: selectedProblem == 'account'
+                                borderColor: selectedProblem == SupportIssueType.Account
                                     ? AppColors.primary
                                     : AppColors.border_2,
-                                backgroundColor: selectedProblem == 'account'
+                                backgroundColor: selectedProblem == SupportIssueType.Account
                                     ? AppColors.primary.withOpacity(0.1)
                                     : Colors.transparent,
                                 trailingType: TrailingType.radio,
-                                isSelected: selectedProblem == 'account',
+                                isSelected: selectedProblem == SupportIssueType.Account,
                                 onTap: () {
                                   setState(() {
-                                    selectedProblem = 'account';
+                                    selectedProblem = SupportIssueType.Account;
                                   });
                                 },
                                 padding: const EdgeInsets.all(16),
@@ -211,17 +257,17 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
                                     AppColors.secondary_500.withOpacity(0.1),
                                 borderType: CardBorderType.all,
                                 borderRadius: 16.0,
-                                borderColor: selectedProblem == 'qr_code'
+                                borderColor: selectedProblem == SupportIssueType.QRCode
                                     ? AppColors.primary
                                     : AppColors.border_2,
-                                backgroundColor: selectedProblem == 'qr_code'
+                                backgroundColor: selectedProblem == SupportIssueType.QRCode
                                     ? AppColors.primary.withOpacity(0.1)
                                     : Colors.transparent,
                                 trailingType: TrailingType.radio,
-                                isSelected: selectedProblem == 'qr_code',
+                                isSelected: selectedProblem == SupportIssueType.QRCode,
                                 onTap: () {
                                   setState(() {
-                                    selectedProblem = 'qr_code';
+                                    selectedProblem = SupportIssueType.QRCode;
                                   });
                                 },
                                 padding: const EdgeInsets.all(16),
@@ -237,17 +283,17 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
                                     AppColors.secondary_500.withOpacity(0.1),
                                 borderType: CardBorderType.all,
                                 borderRadius: 16.0,
-                                borderColor: selectedProblem == 'bug'
+                                borderColor: selectedProblem == SupportIssueType.Bug
                                     ? AppColors.primary
                                     : AppColors.border_2,
-                                backgroundColor: selectedProblem == 'bug'
+                                backgroundColor: selectedProblem == SupportIssueType.Bug
                                     ? AppColors.primary.withOpacity(0.1)
                                     : Colors.transparent,
                                 trailingType: TrailingType.radio,
-                                isSelected: selectedProblem == 'bug',
+                                isSelected: selectedProblem == SupportIssueType.Bug,
                                 onTap: () {
                                   setState(() {
-                                    selectedProblem = 'bug';
+                                    selectedProblem = SupportIssueType.Bug;
                                   });
                                 },
                                 padding: const EdgeInsets.all(16),
@@ -293,6 +339,7 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
                         text: 'Submit Ticket',
                         onPressed: _submitTicket,
                         showArrow: true,
+                        isLoading: _isLoading,
                       ),
                     ],
                   ),

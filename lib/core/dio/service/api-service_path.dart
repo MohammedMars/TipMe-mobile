@@ -11,4 +11,5 @@ class ApiServicePath {
   static get tipTransactionPath => "${baseUrl}/${version}/TipTransaction/";
   static get settingsPath => "${baseUrl}/${version}/TipReceiverSettings/";
   static get appSettingsPath => "${baseUrl}/${version}/AppSettings/";
+  static get supportIssuePath => "${baseUrl}/${version}/SupportIssue/";
 }

@@ -12,4 +12,5 @@ enum ApiServiceType {
   TipTransaction,
   Settings,
   AppSettings,
+  SupportIssue,
 }
