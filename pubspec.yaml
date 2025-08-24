@@ -76,7 +76,6 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/translation/
-    - assets/flags/
   fonts:
     - family: Quicksand
       fonts:
