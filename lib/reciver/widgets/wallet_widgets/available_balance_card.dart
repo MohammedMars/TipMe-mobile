@@ -85,7 +85,7 @@ class _AvailableBalanceCardState extends State<AvailableBalanceCard> {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      height: 136, // Fixed height to maintain consistency
+      height: 160,
       margin: const EdgeInsets.symmetric(horizontal: 32),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(

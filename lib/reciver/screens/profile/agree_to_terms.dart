@@ -46,7 +46,8 @@ class _AgreeToTermsPageState extends State<AgreeToTermsPage> {
       final formData = profileProvider.toFormData();
 
       final authClient = sl<DioClient>(instanceName: 'AuthTipReceiver');
-      final result = await AuthTipReceiverService(authClient).completeProfile(formData);
+      final result =
+          await AuthTipReceiverService(authClient).completeProfile(formData);
 
       if (result.success) {
         Navigator.of(context).pushNamed(AppRoutes.verificationPending);
@@ -85,13 +86,6 @@ class _AgreeToTermsPageState extends State<AgreeToTermsPage> {
         );
       },
     );
-  }
-
-  double _getResponsiveSubtitleFontSize(Size screenSize) {
-    if (screenSize.width > 600) return 18;
-    if (screenSize.width > 400) return 16;
-    if (screenSize.width > 350) return 15;
-    return 14;
   }
 
   Widget _buildTermsContent() {

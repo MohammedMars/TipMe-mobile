@@ -45,8 +45,8 @@ class VerificationSuccessSheet extends StatelessWidget {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      isDismissible: true, // Allow dismissing by tapping outside
-      enableDrag: true, // Allow dismissing by dragging
+      isDismissible: true,
+      enableDrag: true,
       builder: (context) => VerificationSuccessSheet(
         titleKey: titleKey,
         descriptionKey: descriptionKey,
@@ -78,7 +78,6 @@ class VerificationSuccessSheet extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Icon with circle background
             Container(
               width: 72,
               height: 72,
