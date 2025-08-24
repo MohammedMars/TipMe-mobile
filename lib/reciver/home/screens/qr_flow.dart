@@ -10,6 +10,7 @@ import 'package:tipme_app/di/gitIt.dart';
 import 'package:tipme_app/reciver/screens/wallet/notification_screen.dart';
 import 'package:tipme_app/reciver/widgets/custom_bottom_navigation.dart';
 import 'package:tipme_app/reciver/widgets/wallet_widgets/custom_top_bar.dart';
+import 'package:tipme_app/reciver/widgets/wallet_widgets/available_balance_card.dart'; // Add this import
 import 'package:tipme_app/reciver/home/screens/customize_qr_screen.dart';
 import 'package:tipme_app/reciver/home/widgets/qr_content.dart';
 import 'package:tipme_app/reciver/home/widgets/quick_icon.dart';
@@ -17,6 +18,7 @@ import 'package:tipme_app/routs/app_routs.dart';
 import 'package:tipme_app/data/services/language_service.dart';
 import 'package:tipme_app/services/tipReceiverStatisticsService.dart';
 import 'package:tipme_app/utils/colors.dart';
+import 'package:tipme_app/utils/app_font.dart'; // Add this import
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:tipme_app/services/qrCodeService.dart';
@@ -125,24 +127,53 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: Stack(
           children: [
-            _buildBackgroundImage(),
-            CustomTopBar.home(
-              profileImagePath: 'assets/images/bank.png',
-              onProfileTap: () {
-                Navigator.pushNamed(context, AppRoutes.profilePage);
-              },
-              onNotificationTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const NotificationScreen(),
+            Column(
+              children: [
+                CustomTopBar.home(
+                  profileImagePath: 'assets/images/bank.png',
+                  onProfileTap: () {
+                    Navigator.pushNamed(context, AppRoutes.profilePage);
+                  },
+                  onNotificationTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const NotificationScreen(),
+                      ),
+                    );
+                  },
+                  showNotification: _showNotifications,
+                ),
+                const SizedBox(height: 160),
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(24),
+                        topRight: Radius.circular(24),
+                      ),
+                    ),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(24, 87, 24, 24),
+                      child: Column(
+                        children: [
+                          _buildQrSection(languageService, logoToShow),
+                        ],
+                      ),
+                    ),
                   ),
-                );
-              },
-              showNotification: _showNotifications,
+                ),
+              ],
             ),
-            _buildMainContent(languageService, logoToShow),
-            _buildBalanceCard(),
+            // Grouped welcome text, available balance card, and shadow
+            Positioned(
+              top: 70, // Starting position for the group
+              left: 0,
+              right: 0,
+              child: _buildWelcomeCardGroup(languageService),
+            ),
           ],
         ),
       ),
@@ -171,56 +202,77 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Widget _buildBackgroundImage() {
-    return Align(
-      alignment: Alignment.topCenter,
-      child: Container(
-        width: _bgWidth,
-        height: _bgHeight,
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/freepik--Graphics--inject-11.png'),
-            fit: BoxFit.cover,
-          ),
+  Widget _buildWelcomeCardGroup(LanguageService languageService) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // Welcome text section
+        _buildWelcomeSection(languageService),
+        const SizedBox(height: 24), // 24px space between welcome text and card
+        // Available balance card
+        AvailableBalanceCard(
+          transferDate: '', // Empty since we're not showing it
+          backgroundImagePath: 'assets/images/available-balance.png',
+          iconPath: 'assets/icons/logo-without-text.svg',
+          showTransferDate: false, // Hide the transfer date line
         ),
+        const SizedBox(height: 2), // 2px space between card and shadow
+        // Shadow under the card
+        _buildCardShadow(),
+      ],
+    );
+  }
+
+  Widget _buildWelcomeSection(LanguageService languageService) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          languageService.getText('Welcome'),
+          textAlign: TextAlign.center,
+          style: AppFonts.lgBold(context, color: AppColors.white),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          languageService.getText('goodToSeeYou'),
+          textAlign: TextAlign.center,
+          style: AppFonts.smMedium(context, color: AppColors.white),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCardShadow() {
+    return Container(
+      width: _cardWidth, // Same width as the available balance card
+      height: 10,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(120),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 18,
+            spreadRadius: 0,
+            offset: const Offset(0, 3),
+          )
+        ],
       ),
     );
   }
 
-  Widget _buildMainContent(
+  Widget _buildQrSection(
       LanguageService languageService, Uint8List? logoToShow) {
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: Container(
-        height: MediaQuery.of(context).size.height * 0.63,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
-          ),
-        ),
-        child: Column(
+    return Column(
+      children: [
+        Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.topCenter,
           children: [
-            const SizedBox(height: 45),
-            _buildShadow(),
-            const SizedBox(height: 25),
-            Expanded(
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  alignment: Alignment.topCenter,
-                  children: [
-                    _buildQrContainer(languageService, logoToShow),
-                    _buildCustomizeButton(languageService),
-                  ],
-                ),
-              ),
-            ),
+            _buildQrContainer(languageService, logoToShow),
+            _buildCustomizeButton(languageService),
           ],
         ),
-      ),
+      ],
     );
   }
 
@@ -438,139 +490,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildBalanceCard() {
-    return Positioned(
-      top: _bgHeight - _overlayDrop,
-      left: 0,
-      right: 0,
-      child: Center(
-        child: Container(
-          width: _cardWidth,
-          height: _overlayCardHeight,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            color: AppColors.info_910,
-          ),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              const SizedBox(height: 7),
-              _buildWelcomeSection(),
-              const SizedBox(height: 20),
-              _buildBalanceSection(),
-              const Spacer(),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWelcomeSection() {
-    final languageService = Provider.of<LanguageService>(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Text(
-          languageService.getText('Welcome'),
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: AppColors.white,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          languageService.getText('goodToSeeYou'),
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 14,
-            color: AppColors.white,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBalanceSection() {
-    return Container(
-      height: 96,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        color: const Color.fromARGB(255, 36, 28, 110),
-      ),
-      child: Stack(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(18),
-            child: Image.asset(
-              'assets/images/Mask group.png',
-              width: double.infinity,
-              height: double.infinity,
-              fit: BoxFit.cover,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                _buildLogoContainer(),
-                const SizedBox(width: 14),
-                _buildBalanceText(),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLogoContainer() {
-    return Container(
-      width: 64,
-      height: 64,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Image.asset(
-          'assets/images/Group_39258.png',
-          fit: BoxFit.contain,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBalanceText() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Available Balance",
-          style: TextStyle(
-            color: Colors.white70,
-            fontSize: 12,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          "${_balance.toStringAsFixed(2)} $_currency",
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
     );
   }
 
