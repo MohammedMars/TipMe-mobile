@@ -22,6 +22,7 @@ import 'package:tipme_app/utils/app_font.dart'; // Add this import
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:tipme_app/services/qrCodeService.dart';
+import 'package:share_plus/share_plus.dart';
 
 class HomeScreen extends StatefulWidget {
   final Uint8List? qrBytes;
@@ -386,8 +387,38 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _shareQr() async {
-    // TODO: Implement share functionality
+    if (qrBytes == null) {
+      // Show a message if QR code is not loaded
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No QR code available to share')),
+      );
+      return;
+    }
+
+    try {
+      // Create a temporary file in the device to share the QR code image
+      final tempDir = Directory.systemTemp;
+      final file = await File('${tempDir.path}/MyTipMeQR.png').create();
+      await file.writeAsBytes(qrBytes!);
+
+      // Use share_plus to open the share sheet (options to share)
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: 'Check out my TipMe QR code!',
+      );
+
+      // show a confirmation SnackBar
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sharing QR Code...')),
+      );
+    } catch (e) {
+      // Show an error message if sharing fails
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error sharing QR Code: $e')),
+      );
+    }
   }
+
 
   Future<void> _saveQrToGallery(
       Uint8List? qrBytes, BuildContext context) async {
