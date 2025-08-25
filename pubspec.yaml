@@ -50,6 +50,7 @@ dependencies:
   firebase_messaging: ^14.7.19
   country_icons: ^2.0.0
   hive_flutter: ^1.1.0
+  connectivity_plus: ^6.0.3
 dev_dependencies:
   flutter_test:
     sdk: flutter

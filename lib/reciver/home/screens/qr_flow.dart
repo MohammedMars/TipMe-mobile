@@ -73,6 +73,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadQRCodeFromBackend() async {
+    final userId = await StorageService.get('user_id');
+    print("----------------------------------------------");
+    print(userId);
     setState(() {
       isLoading = true;
       errorMessage = null;

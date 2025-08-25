@@ -45,7 +45,8 @@ class CacheService {
 
     final response = await _dioClient.get('Cities/$countryId');
     final List citiesJson = response.data['data'];
-    final cities = citiesJson.map((e) => City.fromJson(e)).toList().cast<City>();
+    final cities =
+        citiesJson.map((e) => City.fromJson(e)).toList().cast<City>();
     country.cities = cities;
     return cities;
   }
