@@ -1,26 +1,35 @@
-// lib/reciver/auth/widgets/phone_input.dart
+// lib/shared/widgets/phone_input.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:tipme_app/core/dio/client/dio_client.dart';
+import 'package:tipme_app/data/services/language_service.dart';
 import 'package:tipme_app/di/gitIt.dart';
+import 'package:tipme_app/reciver/widgets/mainProfile_widgets/otp_card.dart';
 import 'package:tipme_app/services/cacheService.dart';
-import '../../utils/colors.dart';
-import '../../utils/app_font.dart';
-import '../../data/services/language_service.dart';
+import 'package:tipme_app/utils/app_font.dart';
+import 'package:tipme_app/utils/colors.dart';
 
 class CountryInfo {
   final String nameKey;
   final String code;
   final String countryCode;
+  final String? customFlagPath;
 
   const CountryInfo({
     required this.nameKey,
     required this.code,
     required this.countryCode,
+    this.customFlagPath,
   });
 
-  String get flagPath => 'icons/flags/png/$countryCode.png';
+  String get flagPath => customFlagPath ?? 'icons/flags/png/$countryCode.png';
+}
+
+enum PhoneInputMode {
+  auth, // (sign_in_up)
+  account, //(account_info_page)
 }
 
 class CustomPhoneInput extends StatefulWidget {
@@ -29,6 +38,9 @@ class CustomPhoneInput extends StatefulWidget {
   final String phoneNumber;
   final TextEditingController? controller;
   final bool isVerified;
+  final PhoneInputMode mode;
+  final String selectedCountryCode;
+
   const CustomPhoneInput({
     Key? key,
     required this.onPhoneChanged,
@@ -36,6 +48,8 @@ class CustomPhoneInput extends StatefulWidget {
     this.phoneNumber = '',
     this.controller,
     this.isVerified = false,
+    this.mode = PhoneInputMode.auth,
+    this.selectedCountryCode = '+971',
   }) : super(key: key);
 
   @override
@@ -56,6 +70,11 @@ class _CustomPhoneInputState extends State<CustomPhoneInput> {
   final GlobalKey _buttonKey = GlobalKey();
   final LayerLink _layerLink = LayerLink();
   double _dropdownWidth = 0;
+  double _maxDropdownWidth = 0;
+
+  bool _isAccountVerified = false;
+  bool _wasOriginallyFilled = true;
+  bool _hasBeenEdited = false;
 
   @override
   void initState() {
@@ -63,13 +82,75 @@ class _CustomPhoneInputState extends State<CustomPhoneInput> {
     _controller = widget.controller ?? TextEditingController();
     _focusNode = FocusNode();
 
+    // Only set initial text if no controller is provided
+    if (widget.controller == null) {
+      _controller.text = widget.phoneNumber;
+    }
+
     _controller.addListener(() {
       widget.onPhoneChanged(_controller.text);
+      if (widget.mode == PhoneInputMode.account) {
+        _checkForEdits();
+        _updateVerificationState();
+      }
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadCountries();
     });
+
+    if (widget.mode == PhoneInputMode.account) {
+      _wasOriginallyFilled = widget.phoneNumber.isNotEmpty;
+      _isAccountVerified = widget.isVerified && !_hasBeenEdited;
+    }
+  }
+
+  @override
+  void didUpdateWidget(CustomPhoneInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // Only update controller text if phone number changed AND we're in account mode
+    // In auth mode, let the user type freely without interference
+    if (widget.mode == PhoneInputMode.account &&
+        oldWidget.phoneNumber != widget.phoneNumber) {
+      _controller.text = widget.phoneNumber;
+    }
+
+    // Only update selected country if in account mode and countries are loaded
+    if (widget.mode == PhoneInputMode.account &&
+        oldWidget.selectedCountryCode != widget.selectedCountryCode &&
+        _countries.isNotEmpty) {
+      _updateSelectedCountryFromCode(widget.selectedCountryCode);
+    }
+
+    // Update verification status
+    if (oldWidget.isVerified != widget.isVerified) {
+      setState(() {
+        _isAccountVerified = widget.isVerified && !_hasBeenEdited;
+      });
+    }
+  }
+
+  void _checkForEdits() {
+    if (_controller.text != widget.phoneNumber) {
+      setState(() {
+        _hasBeenEdited = true;
+      });
+    }
+  }
+
+  void _updateVerificationState() {
+    if (widget.mode == PhoneInputMode.account) {
+      setState(() {
+        if (_wasOriginallyFilled && _hasBeenEdited) {
+          _isAccountVerified = false;
+        } else if (_wasOriginallyFilled && !_hasBeenEdited) {
+          _isAccountVerified = _controller.text.isNotEmpty;
+        } else {
+          _isAccountVerified = false;
+        }
+      });
+    }
   }
 
   Future<void> _loadCountries() async {
@@ -82,9 +163,46 @@ class _CustomPhoneInputState extends State<CustomPhoneInput> {
                 countryCode: country.code,
               ))
           .toList();
-      if (_countries.isNotEmpty) _selectedCountry = _countries.first;
+
+      // Only set the selected country based on selectedCountryCode in account mode
+      // and when phoneNumber is not empty (indicating existing user data)
+      if (widget.mode == PhoneInputMode.account &&
+          widget.phoneNumber.isNotEmpty) {
+        _updateSelectedCountryFromCode(widget.selectedCountryCode);
+      } else {
+        // For auth mode or when no phone number exists, find the country matching selectedCountryCode or use first
+        if (_countries.isNotEmpty) {
+          final matchingCountry = _countries.firstWhere(
+            (country) => country.code == widget.selectedCountryCode,
+            orElse: () => _countries.first,
+          );
+          _selectedCountry = matchingCountry;
+          widget.onCountryChanged?.call(_selectedCountry!.code);
+        }
+      }
     });
+
     _calculateDropdownWidth();
+  }
+
+  void _updateSelectedCountryFromCode(String countryCode) {
+    if (_countries.isNotEmpty) {
+      // Find the country that matches the provided country code
+      final matchingCountry = _countries.firstWhere(
+        (country) => country.code == countryCode,
+        orElse: () =>
+            _countries.first, // fallback to first country if not found
+      );
+
+      setState(() {
+        _selectedCountry = matchingCountry;
+      });
+
+      // Notify parent about the country change if it's different
+      if (_selectedCountry?.code != countryCode) {
+        widget.onCountryChanged?.call(_selectedCountry!.code);
+      }
+    }
   }
 
   void _calculateDropdownWidth() {
@@ -102,6 +220,7 @@ class _CustomPhoneInputState extends State<CustomPhoneInput> {
     }
 
     setState(() {
+      _maxDropdownWidth = maxWidth;
       _dropdownWidth = maxWidth;
     });
   }
@@ -157,7 +276,7 @@ class _CustomPhoneInputState extends State<CustomPhoneInput> {
     return Container(
       width: _dropdownWidth,
       constraints: BoxConstraints(
-        maxHeight: 200, // Limit dropdown height
+        maxHeight: 200,
       ),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -202,21 +321,32 @@ class _CustomPhoneInputState extends State<CustomPhoneInput> {
       height: 20,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(4),
-        color: Colors.grey[200], // Fallback color
+        color: Colors.grey[200],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(4),
-        child: Image.asset(
-          country.flagPath,
-          package: 'country_icons',
-          width: 26,
-          height: 20,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => Container(
-            color: Colors.grey[300],
-            child: const Icon(Icons.flag, size: 12, color: Colors.grey),
-          ),
-        ),
+        child: country.customFlagPath != null
+            ? Image.asset(
+                country.customFlagPath!,
+                width: 26,
+                height: 20,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  color: Colors.grey[300],
+                  child: const Icon(Icons.flag, size: 12, color: Colors.grey),
+                ),
+              )
+            : Image.asset(
+                country.flagPath,
+                package: 'country_icons',
+                width: 26,
+                height: 20,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  color: Colors.grey[300],
+                  child: const Icon(Icons.flag, size: 12, color: Colors.grey),
+                ),
+              ),
       ),
     );
   }
@@ -246,9 +376,14 @@ class _CustomPhoneInputState extends State<CustomPhoneInput> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: widget.mode == PhoneInputMode.auth
+                ? Colors.white
+                : AppColors.gray_bg_2,
             borderRadius: BorderRadius.circular(13),
-            border: Border.all(color: AppColors.border_2, width: 1),
+            border: Border.all(
+              color: AppColors.border_2,
+              width: 1,
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -290,7 +425,9 @@ class _CustomPhoneInputState extends State<CustomPhoneInput> {
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
-          hintText: languageService.getText('phoneHint'),
+          hintText: widget.mode == PhoneInputMode.auth
+              ? languageService.getText('phoneHint')
+              : '12 123 1234',
           hintStyle: AppFonts.mdMedium(
             context,
             color: AppColors.black.withOpacity(0.5),
@@ -302,7 +439,15 @@ class _CustomPhoneInputState extends State<CustomPhoneInput> {
     );
   }
 
-  Widget _buildClearButton() {
+  Widget _buildRightSection() {
+    if (widget.mode == PhoneInputMode.auth) {
+      return _buildAuthClearButton();
+    } else {
+      return _buildAccountRightSection();
+    }
+  }
+
+  Widget _buildAuthClearButton() {
     if (_controller.text.isEmpty) return const SizedBox.shrink();
 
     return GestureDetector(
@@ -320,12 +465,126 @@ class _CustomPhoneInputState extends State<CustomPhoneInput> {
     );
   }
 
+  Widget _buildAccountRightSection() {
+    if (_controller.text.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    if (_isAccountVerified) {
+      return _buildVerifiedBadge();
+    } else {
+      return _buildUnverifiedSection();
+    }
+  }
+
+  Widget _buildVerifiedBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.success_500.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.success_500, width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SvgPicture.asset(
+            'assets/icons/circle-check.svg',
+            width: 15,
+            height: 15,
+            colorFilter: const ColorFilter.mode(
+              AppColors.success_500,
+              BlendMode.srcIn,
+            ),
+          ),
+          const SizedBox(width: 1.5),
+          Text(
+            'Verified',
+            style: AppFonts.smSemiBold(context, color: Colors.green),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUnverifiedSection() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildClearButton(),
+        const SizedBox(width: 8),
+        _buildVerifyButton(),
+      ],
+    );
+  }
+
+  Widget _buildClearButton() {
+    return GestureDetector(
+      onTap: () {
+        _controller.clear();
+        setState(() {
+          _hasBeenEdited = true;
+        });
+        widget.onPhoneChanged('');
+      },
+      child: Container(
+        width: 20,
+        height: 20,
+        decoration: const BoxDecoration(
+          color: AppColors.text,
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(
+          Icons.close,
+          size: 10,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVerifyButton() {
+    return GestureDetector(
+      onTap: _onVerifyPressed,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          'Verify',
+          style: AppFonts.smSemiBold(context, color: Colors.white),
+        ),
+      ),
+    );
+  }
+
+  void _onVerifyPressed() {
+    final fullPhoneNumber =
+        '${_selectedCountry!.code} ${_controller.text}'.trim();
+
+    if (_controller.text.isNotEmpty) {
+      showOtpPopup(context, fullPhoneNumber, () {
+        setState(() {
+          _isAccountVerified = true;
+        });
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter a phone number")),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7.5),
       decoration: BoxDecoration(
-        color: AppColors.gray_bg_2,
+        color: widget.mode == PhoneInputMode.auth
+            ? AppColors.gray_bg_2
+            : AppColors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border_2, width: 1),
       ),
@@ -334,7 +593,7 @@ class _CustomPhoneInputState extends State<CustomPhoneInput> {
           _buildCountrySelector(),
           const SizedBox(width: 10),
           _buildPhoneInput(),
-          _buildClearButton(),
+          _buildRightSection(),
         ],
       ),
     );

@@ -1,4 +1,4 @@
-//lib\reciver\auth\widgets\mainProfile_widgets\otp_card.dart
+// lib/reciver/auth/widgets/mainProfile_widgets/otp_card.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tipme_app/reciver/widgets/otp_input.dart';
@@ -7,7 +7,10 @@ import 'package:tipme_app/utils/app_font.dart';
 import 'package:tipme_app/utils/colors.dart';
 import 'package:tipme_app/data/services/language_service.dart';
 
-void showOtpPopup(BuildContext context, String phoneNumber) {
+ValueNotifier<bool> isPhoneVerified = ValueNotifier(false);
+
+void showOtpPopup(BuildContext context, String phoneNumber,
+    VoidCallback onVerificationSuccess) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -19,6 +22,9 @@ void showOtpPopup(BuildContext context, String phoneNumber) {
           Provider.of<LanguageService>(context, listen: false);
       String otpCode = "";
       final ValueNotifier<bool> isButtonEnabled = ValueNotifier(false);
+      final ValueNotifier<bool> isResending = ValueNotifier(false);
+
+      final GlobalKey<OtpInputState> otpInputKey = GlobalKey<OtpInputState>();
 
       void onOtpChanged(String code) {
         otpCode = code;
@@ -28,31 +34,66 @@ void showOtpPopup(BuildContext context, String phoneNumber) {
       void onVerify() {
         if (otpCode.length == 6) {
           print("OTP Verified: $otpCode");
+
           Navigator.of(context).pop();
 
-          VerificationSuccessSheet.show(
-            context,
-            titleKey: 'Verified Successfully',
-            descriptionKey: 'Your OTP has been verified successfully.',
-            buttonTextKey: 'Close',
-            icon: Icons.check,
-            iconColor: AppColors.success,
-            iconBackgroundColor: AppColors.white,
-            buttonColor: AppColors.primary,
-            buttonTextColor: AppColors.white,
-            onButtonPressed: () {
-              Navigator.of(context).pop();
-            },
+          showModalBottomSheet(
+            context: context,
+            backgroundColor: Colors.transparent,
+            isScrollControlled: true,
+            builder: (context) => VerificationSuccessSheet(
+              titleKey: 'Verified Successfully',
+              descriptionKey: 'Your OTP has been verified successfully.',
+              buttonTextKey: 'Close',
+              iconColor: AppColors.success,
+              iconBackgroundColor: AppColors.white,
+              buttonColor: AppColors.primary,
+              buttonTextColor: AppColors.white,
+              onButtonPressed: () {
+                onVerificationSuccess();
+                Navigator.of(context).pop();
+              },
+              icon: Icons.check,
+            ),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(languageService.getText("invalidOtp"))),
+            SnackBar(
+                content: Text(
+                    languageService.getText("invalidOtp") ?? "Invalid OTP")),
           );
         }
       }
 
-      void onResend() {
+      void onResend() async {
+        isResending.value = true;
         print("Resend OTP clicked");
+
+        try {
+          await Future.delayed(const Duration(seconds: 2));
+
+          otpInputKey.currentState?.restartTimer();
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Verification code sent successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+
+          otpCode = "";
+          isButtonEnabled.value = false;
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to resend code. Please try again.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          print("Resend OTP Error: $e");
+        } finally {
+          isResending.value = false;
+        }
       }
 
       return WillPopScope(
@@ -79,14 +120,14 @@ void showOtpPopup(BuildContext context, String phoneNumber) {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        languageService.getText("enterOtpTitle"),
+                        languageService.getText("enterOtpTitle") ?? "Enter OTP",
                         textAlign: TextAlign.center,
                         style: AppFonts.h3(context, color: AppColors.black),
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        languageService
-                            .getText("enterOtpSubtitle")!
+                        (languageService.getText("enterOtpSubtitle") ??
+                                "We've sent an OTP to {phoneNumber}")
                             .replaceAll("{phoneNumber}", phoneNumber),
                         textAlign: TextAlign.center,
                         style:
@@ -94,6 +135,7 @@ void showOtpPopup(BuildContext context, String phoneNumber) {
                       ),
                       const SizedBox(height: 24),
                       OtpInput(
+                        key: otpInputKey,
                         length: 6,
                         otpCode: otpCode,
                         onOtpChanged: onOtpChanged,
@@ -106,17 +148,30 @@ void showOtpPopup(BuildContext context, String phoneNumber) {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            languageService.getText("didntGetOtp"),
+                            languageService.getText("didntGetOtp") ??
+                                "Didn't get OTP?",
                             style:
                                 AppFonts.mdBold(context, color: AppColors.text),
                           ),
-                          TextButton(
-                            onPressed: onResend,
-                            child: Text(
-                              languageService.getText("resendCode"),
-                              style: AppFonts.mdMedium(context,
-                                  color: AppColors.primary),
-                            ),
+                          ValueListenableBuilder<bool>(
+                            valueListenable: isResending,
+                            builder: (context, resending, child) {
+                              return TextButton(
+                                onPressed: resending ? null : onResend,
+                                child: Text(
+                                  resending
+                                      ? 'Sending...'
+                                      : languageService.getText("resendCode") ??
+                                          "Resend Code",
+                                  style: AppFonts.mdMedium(
+                                    context,
+                                    color: resending
+                                        ? Colors.grey[400]
+                                        : AppColors.primary,
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -139,7 +194,8 @@ void showOtpPopup(BuildContext context, String phoneNumber) {
                                 ),
                               ),
                               child: Text(
-                                languageService.getText("verifyPhoneNumber"),
+                                languageService.getText("verifyPhoneNumber") ??
+                                    "Verify Phone Number",
                                 style: AppFonts.mdBold(context,
                                     color: AppColors.white),
                               ),
