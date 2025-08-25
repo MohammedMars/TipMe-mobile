@@ -13,6 +13,7 @@ import 'package:tipme_app/data/services/language_service.dart';
 import 'package:tipme_app/utils/app_font.dart';
 import 'package:tipme_app/utils/colors.dart';
 import 'package:tipme_app/services/qrCodeService.dart'; // Add your QR service
+import 'package:tipme_app/services/cacheService.dart';
 import 'package:tipme_app/dtos/generateQRCodeDto.dart'; // Add your DTO
 
 class CustomizeQrScreen extends StatefulWidget {
@@ -49,7 +50,7 @@ class _CustomizeQrScreenState extends State<CustomizeQrScreen> {
     qrBytes = widget.qrBytes;
     draftLogo = widget.currentLogo;
     // Initialize your QR service (adjust based on your DI setup)
-    qrCodeService = QRCodeService(sl<DioClient>(instanceName: 'QrCode'));
+    qrCodeService = sl<QRCodeService>();
     _loadExistingQRCode();
   }
 

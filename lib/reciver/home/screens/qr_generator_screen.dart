@@ -11,6 +11,7 @@ import 'package:tipme_app/reciver/widgets/custom_button.dart';
 import 'package:tipme_app/routs/app_routs.dart';
 import 'package:tipme_app/data/services/language_service.dart';
 import 'package:tipme_app/services/qrCodeService.dart';
+import 'package:tipme_app/services/cacheService.dart';
 import 'package:tipme_app/utils/colors.dart';
 import 'package:tipme_app/dtos/generateQRCodeDto.dart';
 
@@ -38,7 +39,7 @@ class _QRGeneratorScreenState extends State<QRGeneratorScreen> {
   }
 
   void _initializeService() {
-    qrCodeService = QRCodeService(sl<DioClient>(instanceName: 'QrCode'));
+    qrCodeService = sl<QRCodeService>();
   }
 
   Future<void> _loadExistingQRCode() async {

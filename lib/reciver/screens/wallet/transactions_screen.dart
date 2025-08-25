@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+import 'package:tipme_app/core/dio/service/api-service_path.dart';
 import 'package:tipme_app/core/storage/storage_service.dart';
 import 'package:tipme_app/reciver/screens/wallet/notification_screen.dart';
 import 'package:tipme_app/reciver/widgets/custom_bottom_navigation.dart';
@@ -13,10 +14,11 @@ import 'package:tipme_app/data/services/language_service.dart';
 import 'package:tipme_app/routs/app_routs.dart';
 import 'package:tipme_app/utils/app_font.dart';
 import 'package:tipme_app/utils/colors.dart';
-import 'package:tipme_app/core/dio/client/dio_client.dart';
 import 'package:tipme_app/di/gitIt.dart';
 import 'package:tipme_app/services/tipTransactionService.dart';
+import 'package:tipme_app/services/tipReceiverService.dart';
 import 'package:tipme_app/viewModels/transactionItem.dart';
+import 'package:tipme_app/services/excelExportService.dart';
 
 class TransactionsScreen extends StatefulWidget {
   const TransactionsScreen({Key? key}) : super(key: key);
@@ -32,6 +34,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
   // Services
   late TipTransactionService _transactionService;
+  late TipReceiverService _receiverService;
 
   // State
   List<TransactionItem> _allTransactions = [];
@@ -41,20 +44,34 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   final int _pageSize = 10;
   bool _hasMore = true;
   bool _isLoadingMore = false;
-  
+
   var _currency;
+  String? _profileImage;
 
   @override
   void initState() {
     super.initState();
-    _transactionService = TipTransactionService(
-        dioClient: sl<DioClient>(instanceName: 'TipTransaction'));
+    _transactionService = sl<TipTransactionService>();
+    _receiverService = sl<TipReceiverService>();
     _loadTransactions();
     _initializeScreen();
+    _loadProfileImage();
   }
 
   Future<void> _initializeScreen() async {
     _currency = await StorageService.get('Currency') ?? "";
+  }
+
+  Future<void> _loadProfileImage() async {
+    final response = await _receiverService.GetMe();
+    if (response != null && response.success && response.data != null) {
+      setState(() {
+        _profileImage = response.data!.imagePath != null &&
+                response.data!.imagePath!.isNotEmpty
+            ? "${ApiServicePath.fileServiceUrl}/${response.data!.imagePath}"
+            : null;
+      });
+    }
   }
 
   Future<void> _loadTransactions({bool loadMore = false}) async {
@@ -69,7 +86,6 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
     try {
       final response = await _transactionService.getTipTransactions(
-        status: _isReceivedSelected ? 1 : 2,
         pageNumber: loadMore ? _currentPage + 1 : 1,
         pageSize: _pageSize,
       );
@@ -90,14 +106,14 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         });
       } else {
         setState(() {
-          _errorMessage = response.message ?? 'Failed to load transactions';
+          _errorMessage = response.message;
         });
       }
     } catch (e) {
       setState(() {
         _errorMessage = 'An error occurred: $e';
       });
-  } finally {
+    } finally {
       setState(() {
         _isLoading = false;
         _isLoadingMore = false;
@@ -112,11 +128,12 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   List<TransactionItem> get _filteredTransactions {
-    final typeFiltered = _allTransactions
-        .where((t) =>
-            _isReceivedSelected ? t.type == 'received' : t.type == 'redeemed')
-        .toList();
-
+    List<TransactionItem> typeFiltered;
+    if (!_isReceivedSelected) {
+      typeFiltered = _allTransactions.where((t) => t.status == 2).toList();
+    } else {
+      typeFiltered = _allTransactions.where((t) => t.status != 2).toList();
+    }
     if (_searchQuery.isEmpty) {
       return typeFiltered;
     }
@@ -143,15 +160,19 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 style: AppFonts.lgBold(context, color: AppColors.white),
               ),
               leading: GestureDetector(
-                onTap: () => Navigator.of(context).pop(),
+                onTap: () =>
+                    Navigator.pushNamed(context, AppRoutes.profilePage),
                 child: Container(
                   width: 40,
                   height: 40,
                   decoration: const BoxDecoration(
                     shape: BoxShape.circle,
                   ),
-                  child: const CircleAvatar(
-                    backgroundImage: AssetImage('assets/images/bank.png'),
+                  child: CircleAvatar(
+                    backgroundImage: _profileImage != null
+                        ? NetworkImage(_profileImage!)
+                        : const AssetImage('assets/images/bank.png')
+                            as ImageProvider,
                   ),
                 ),
               ),
@@ -225,7 +246,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                               hintTextColor: AppColors.text,
                               iconColor: AppColors.text,
                               prefixIconPath: 'assets/icons/search.svg',
-                              showFilterIcon: true,
+                              showFilterIcon: false,
                               onChanged: _onSearchChanged,
                             ),
                           ),
@@ -242,13 +263,21 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                               ),
                             ),
                             child: Center(
-                              child: SvgPicture.asset(
-                                'assets/icons/download.svg',
-                                width: 20,
-                                height: 20,
-                                colorFilter: const ColorFilter.mode(
-                                  AppColors.black,
-                                  BlendMode.srcIn,
+                              child: GestureDetector(
+                                onTap: () async {
+                                  await ExcelExportService.exportTransactionsToExcel(
+                                    _filteredTransactions,
+                                    _currency,
+                                  );
+                                },
+                                child: SvgPicture.asset(
+                                  'assets/icons/download.svg',
+                                  width: 20,
+                                  height: 20,
+                                  colorFilter: const ColorFilter.mode(
+                                    AppColors.black,
+                                    BlendMode.srcIn,
+                                  ),
                                 ),
                               ),
                             ),
@@ -358,7 +387,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         currentIndex: 2, // Set to transactions tab (index 2)
         onTap: (index) {
           if (index == 2) return; // Already on transactions screen
-          
+
           switch (index) {
             case 0:
               Navigator.pushNamedAndRemoveUntil(
@@ -379,19 +408,6 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       ),
     );
   }
-
-  // void _handleBottomNavTap(int index) {
-  //   switch (index) {
-  //     case 0:
-  //       Navigator.pushNamed(context, AppRoutes.logInQR);
-  //       break;
-  //     case 1:
-  //       Navigator.pushNamed(context, AppRoutes.walletScreen);
-  //       break;
-  //     case 2:
-  //       break;
-  //   }
-  // }
 
   @override
   void dispose() {

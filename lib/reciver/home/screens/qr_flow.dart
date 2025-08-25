@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:tipme_app/core/dio/client/dio_client.dart';
+import 'package:tipme_app/core/dio/service/api-service_path.dart';
 import 'package:tipme_app/core/storage/storage_service.dart';
 import 'package:tipme_app/di/gitIt.dart';
 import 'package:tipme_app/reciver/screens/wallet/notification_screen.dart';
@@ -82,10 +83,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-
   Future<void> _initializeScreen() async {
-    qrCodeService = QRCodeService(sl<DioClient>(instanceName: 'QrCode'));
-    tipReceiverService = TipReceiverService(sl<DioClient>(instanceName: 'TipReceiver'));
+    qrCodeService = sl<QRCodeService>();
+    tipReceiverService = sl<TipReceiverService>();
     _currency = await StorageService.get('Currency') ?? "";
   }
 
@@ -148,7 +148,10 @@ class _HomeScreenState extends State<HomeScreen> {
             Column(
               children: [
                 CustomTopBar.home(
-                  profileImagePath: 'assets/images/bank.png',
+                  profileImagePath: _tipReceiverData?.imagePath != null &&
+                          _tipReceiverData!.imagePath!.isNotEmpty
+                      ? "${ApiServicePath.fileServiceUrl}/${_tipReceiverData!.imagePath}"
+                      : null,
                   onProfileTap: () {
                     Navigator.pushNamed(context, AppRoutes.profilePage);
                   },
@@ -246,9 +249,9 @@ class _HomeScreenState extends State<HomeScreen> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
-          _tipReceiverData != null 
-            ? "${languageService.getText('Welcome')} ${_tipReceiverData!.firstName ?? ''}"
-            : "${languageService.getText('Welcome')}",
+          _tipReceiverData != null
+              ? "${languageService.getText('Welcome')} ${_tipReceiverData!.firstName ?? ''}"
+              : "${languageService.getText('Welcome')}",
           textAlign: TextAlign.center,
           style: AppFonts.lgBold(context, color: AppColors.white),
         ),
@@ -589,8 +592,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _fetchBalance() async {
     try {
-      _statisticsService = TipReceiverStatisticsService(
-          sl<DioClient>(instanceName: 'Statistics'));
+      _statisticsService = sl<TipReceiverStatisticsService>();
       final response = await _statisticsService.getBalance();
       setState(() {
         _balance = response.data["total"];

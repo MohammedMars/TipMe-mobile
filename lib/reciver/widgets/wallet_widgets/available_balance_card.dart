@@ -53,8 +53,7 @@ class _AvailableBalanceCardState extends State<AvailableBalanceCard> {
 
   Future<void> _fetchBalance() async {
     try {
-      _statisticsService = TipReceiverStatisticsService(
-          sl<DioClient>(instanceName: 'Statistics')); // inject properly
+      _statisticsService = sl<TipReceiverStatisticsService>();
       final response = await _statisticsService.getBalance();
       setState(() {
         balance = "${response.data["total"].toStringAsFixed(2)} $_currency";

@@ -88,9 +88,17 @@ class CustomTopBar extends StatelessWidget implements PreferredSizeWidget {
                   shape: BoxShape.circle,
                 ),
                 child: CircleAvatar(
-                  backgroundImage: profileImagePath != null
-                      ? AssetImage(profileImagePath!)
-                      : const AssetImage('assets/images/bank.png'),
+                  backgroundImage: profileImagePath != null && profileImagePath!.startsWith('http')
+                      ? NetworkImage(profileImagePath!) as ImageProvider
+                      : profileImagePath != null
+                          ? AssetImage(profileImagePath!) as ImageProvider
+                          : const AssetImage('assets/images/bank.png') as ImageProvider,
+                  onBackgroundImageError: (exception, stackTrace) {
+                    // Handle network image errors by falling back to default
+                  },
+                  child: profileImagePath != null && profileImagePath!.startsWith('http')
+                      ? null
+                      : null,
                 ),
               ),
             )

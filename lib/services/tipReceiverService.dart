@@ -5,18 +5,36 @@ import 'package:tipme_app/dtos/paymentInfoDto.dart';
 import 'package:tipme_app/viewModels/apiResponse.dart';
 import 'package:tipme_app/viewModels/paymentInfoData.dart';
 import 'package:tipme_app/viewModels/tipReceiveerData.dart';
+import 'package:tipme_app/services/cacheService.dart';
 import 'package:dio/dio.dart';
 
 class TipReceiverService {
   final DioClient dioClient;
+  final CacheService? cacheService;
 
-  TipReceiverService(this.dioClient);
+  TipReceiverService(this.dioClient, {this.cacheService});
 
   Future<ApiResponse<TipReceiveerData>?> GetMe() async {
     String? user_id = await StorageService.get('user_id');
     if (user_id == null) {
       return null;
     }
+
+    // Try to get from cache first
+    if (cacheService != null) {
+      final cachedUserData = cacheService!.getUserDataFromCache(user_id);
+      if (cachedUserData != null) {
+        return ApiResponse<TipReceiveerData>(
+          success: true,
+          message: 'User data loaded from cache',
+          data: cachedUserData,
+          errors: [],
+          errorCode: null,
+        );
+      }
+    }
+
+    // If not in cache, fetch from server
     final response = await dioClient.get(
       user_id,
       options: Options(
@@ -25,10 +43,18 @@ class TipReceiverService {
         },
       ),
     );
-    return ApiResponse<TipReceiveerData>.fromJson(
+
+    final apiResponse = ApiResponse<TipReceiveerData>.fromJson(
       response.data,
       (data) => TipReceiveerData.fromJson(data),
     );
+
+    // Cache the fetched user data
+    if (apiResponse.success && apiResponse.data != null && cacheService != null) {
+      cacheService!.cacheUserData(user_id, apiResponse.data!);
+    }
+
+    return apiResponse;
   }
 
   Future<ApiResponse> GetPaymentInfo() async {
@@ -71,5 +97,14 @@ class TipReceiverService {
       response.data,
       (data) => PaymentInfoData.fromJson(data),
     );
+  }
+
+  Future<void> clearUserCache() async {
+    if (cacheService != null) {
+      final userId = await StorageService.get('user_id');
+      if (userId != null) {
+        cacheService!.clearUserDataCache(userId);
+      }
+    }
   }
 }

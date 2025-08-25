@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:tipme_app/core/dio/client/dio_client.dart';
+import 'package:tipme_app/core/dio/service/api-service_path.dart';
 import 'package:tipme_app/di/gitIt.dart';
 import 'package:tipme_app/reciver/screens/wallet/notification_screen.dart';
 import 'package:tipme_app/reciver/widgets/custom_bottom_navigation.dart';
@@ -64,10 +65,8 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   void _initializeServices() {
-    _tipReceiverService =
-        TipReceiverService(sl<DioClient>(instanceName: 'TipReceiver'));
-    _statisticsService =
-        TipReceiverStatisticsService(sl<DioClient>(instanceName: 'Statistics'));
+    _tipReceiverService = sl<TipReceiverService>();
+    _statisticsService = sl<TipReceiverStatisticsService>();
   }
 
   Future<void> _loadData() async {
@@ -217,9 +216,15 @@ class _WalletScreenState extends State<WalletScreen> {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
+  String _getNextWeekFirstDay() {
+    final now = DateTime.now();
+    final daysUntilNextMonday = 8 - now.weekday;
+    final nextMonday = now.add(Duration(days: daysUntilNextMonday));
+    return DateFormat('d MMMM, yyyy').format(nextMonday);
+  }
+
   DateTime getStartOfCurrentWeekSaturday() {
     DateTime now = DateTime.now();
-    // Remap weekdays so Saturday = 1, Sunday = 2, ..., Friday = 7
     int customWeekday =
         now.weekday == 6 ? 1 : (now.weekday == 7 ? 2 : now.weekday + 2);
     return now.subtract(Duration(days: customWeekday - 1)).copyWith(
@@ -350,7 +355,10 @@ class _WalletScreenState extends State<WalletScreen> {
             Column(
               children: [
                 CustomTopBar.home(
-                  profileImagePath: 'assets/images/bank.png',
+                  profileImagePath: _tipReceiverData?.imagePath != null &&
+                          _tipReceiverData!.imagePath!.isNotEmpty
+                      ? "${ApiServicePath.fileServiceUrl}/${_tipReceiverData!.imagePath}"
+                      : null,
                   onProfileTap: () {
                     Navigator.pushNamed(context, AppRoutes.profilePage);
                   },
@@ -391,12 +399,12 @@ class _WalletScreenState extends State<WalletScreen> {
                 ),
               ],
             ),
-            const Positioned(
+            Positioned(
               top: 100,
               left: 0,
               right: 0,
               child: AvailableBalanceCard(
-                transferDate: 'Next Transfer Date: 20 July, 2025',
+                transferDate: 'Next Transfer Date: ${_getNextWeekFirstDay()}',
                 backgroundImagePath: 'assets/images/available-balance.png',
                 iconPath: 'assets/icons/logo-without-text.svg',
                 helpTitleKey: 'myTransfers',

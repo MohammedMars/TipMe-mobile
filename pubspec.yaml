@@ -53,6 +53,7 @@ dependencies:
   connectivity_plus: ^6.0.3
   fluttertoast: ^8.2.4
   overlay_support: ^2.1.0
+  excel: ^4.0.3
   # http: ^1.1.2              # تعديل
 dev_dependencies:
   flutter_test:
