@@ -1,271 +1,197 @@
-// // lib/services/notification_service.dart
-// import 'dart:convert';
-// import 'dart:async';
-// import 'package:signalr_netcore/signalr_client.dart';
-// import 'package:hive/hive.dart';
-// import '../models/notification_item.dart';
-// import 'api_service.dart';
+// lib/services/notification_service.dart
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:tipme_app/core/storage/storage_service.dart';
 
-// class NotificationService {
-//   late HubConnection _hubConnection;
-//   Function(NotificationItem message)? onNotificationReceived;
-//   bool _isConnected = false;
-//   late String userId;
+class NotificationService {
+  static const String _baseUrl = 'http://localhost:5000/api/v1/Notification';
 
-//   //  for messages that failed to send
-//   final List<NotificationItem> _pendingMessages = [];
-//   Timer? _retryTimer;
+  // first api send notification to all users
+  static Future<void> sendBroadcastNotification({
+    required String title,
+    required String subTitle,
+    required String languagePrefix,
+    required String tipReceiverId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/Test/broadcast'),
+        headers: {
+          'Content-Type': 'application/json',
+          'accept': '*/*',
+        },
+        body: json.encode({
+          'title': title,
+          'subTitle': subTitle,
+          'languagePrefix': languagePrefix,
+          'tipReceiverId': tipReceiverId,
+        }),
+      );
 
-//   /// Connect to SignalR Hub
-//   Future<void> connect({required String userId}) async {
-//     this.userId = userId;
+      if (response.statusCode != 200) {
+        throw Exception('Failed to send broadcast: ${response.statusCode}');
+      }
+    } catch (e) {
+      // if offline save for retry later
+      await _storePendingNotification({
+        'type': 'broadcast',
+        'title': title,
+        'subTitle': subTitle,
+        'languagePrefix': languagePrefix,
+        'tipReceiverId': tipReceiverId,
+        'timestamp': DateTime.now().toIso8601String(),
+      });
+      rethrow;
+    }
+  }
 
-//     final serverUrl = "http://localhost:5000/notificationHub?userId=$userId";
+  // send notify to specific user
+  static Future<void> sendUserNotification({
+    required String userId,
+    required String title,
+    required String subTitle,
+    required String languagePrefix,
+    required String tipReceiverId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/Test/sendToUser/$userId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'accept': '*/*',
+        },
+        body: json.encode({
+          'title': title,
+          'subTitle': subTitle,
+          'languagePrefix': languagePrefix,
+          'tipReceiverId': tipReceiverId,
+        }),
+      );
 
-//     _hubConnection = HubConnectionBuilder().withUrl(serverUrl).build();
+      if (response.statusCode != 200) {
+        throw Exception(
+            'Failed to send user notification: ${response.statusCode}');
+      }
+    } catch (e) {
+      // if offline save for retry later
+      await _storePendingNotification({
+        'type': 'user',
+        'userId': userId,
+        'title': title,
+        'subTitle': subTitle,
+        'languagePrefix': languagePrefix,
+        'tipReceiverId': tipReceiverId,
+        'timestamp': DateTime.now().toIso8601String(),
+      });
+      rethrow;
+    }
+  }
 
-//     // Listen to incoming notifications
-//     _hubConnection.on("ReceiveNotification", (arguments) {
-//       print("Received notification: $arguments");
+  // get notifications for a user
+  static Future<List<Map<String, dynamic>>> getUserNotifications(
+      String tipReceiverId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/Test/$tipReceiverId'),
+        headers: {'accept': '*/*'},
+      );
 
-//       if (arguments != null && arguments.isNotEmpty) {
-//         final arg0 = arguments[0];
-//         Map<String, dynamic> messageMap = {};
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        await cacheNotifications(
+            List<Map<String, dynamic>>.from(data['data'] ?? []), tipReceiverId);
+        return List<Map<String, dynamic>>.from(data['data'] ?? []);
+      }
+      throw Exception('Failed to fetch notifications: ${response.statusCode}');
+    } catch (e) {
+      return await _getCachedNotifications(tipReceiverId);
+    }
+  }
 
-//         if (arg0 is Map) {
-//           messageMap = Map<String, dynamic>.from(arg0.cast<String, dynamic>());
-//         } else if (arg0 is String) {
-//           try {
-//             messageMap = jsonDecode(arg0) as Map<String, dynamic>;
-//           } catch (e) {
-//             print("Failed to decode JSON: $e");
+  // get grouped notifications
+  static Future<List<Map<String, dynamic>>> getGroupedNotifications(
+      String tipReceiverId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/Test/Grouped/$tipReceiverId'),
+        headers: {'accept': '*/*'},
+      );
 
-//             messageMap = {
-//               'id': DateTime.now().millisecondsSinceEpoch.toString(),
-//               'title': arg0.toString(),
-//               'subtitle': '',
-//               'timestamp': DateTime.now().toIso8601String(),
-//               'isRead': false,
-//               'category': 'today',
-//             };
-//           }
-//         }
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        await cacheGroupedNotifications(
+            List<Map<String, dynamic>>.from(data['data'] ?? []), tipReceiverId);
+        return List<Map<String, dynamic>>.from(data['data'] ?? []);
+      }
+      throw Exception(
+          'Failed to fetch grouped notifications: ${response.statusCode}');
+    } catch (e) {
+      return await _getCachedGroupedNotifications(tipReceiverId);
+    }
+  }
 
-//         final notification = NotificationItem(
-//           id: messageMap['id'] ??
-//               DateTime.now().millisecondsSinceEpoch.toString(),
-//           title: messageMap['title'] ??
-//               messageMap['subject'] ??
-//               'New Notification',
-//           subtitle: messageMap['subtitle'] ??
-//               messageMap['subTitle'] ??
-//               messageMap['content'] ??
-//               '',
-//           timestamp: DateTime.tryParse(messageMap['timestamp'] ?? '') ??
-//               DateTime.now(),
-//           isRead: messageMap['isRead'] ?? false,
-//           category:
-//               messageMap['category'] ?? _determineCategory(DateTime.now()),
-//         );
+  // save notification locally when offline
+  static Future<void> _storePendingNotification(
+      Map<String, dynamic> notification) async {
+    final pending = await StorageService.getList('pending_notifications') ?? [];
+    pending.add(notification);
+    await StorageService.setList('pending_notifications', pending);
+  }
 
-//         _saveToLocal(notification);
-//         onNotificationReceived?.call(notification);
-//       }
-//     });
+  // retry sending pending notifications when back online
+  static Future<void> retryPendingNotifications() async {
+    final pending = await StorageService.getList('pending_notifications') ?? [];
 
-//     _hubConnection.onclose((error) {
-//       print("SignalR connection closed: $error");
-//       _isConnected = false;
+    for (final notification in List<Map<String, dynamic>>.from(pending)) {
+      try {
+        if (notification['type'] == 'broadcast') {
+          await sendBroadcastNotification(
+            title: notification['title'],
+            subTitle: notification['subTitle'],
+            languagePrefix: notification['languagePrefix'],
+            tipReceiverId: notification['tipReceiverId'],
+          );
+        } else if (notification['type'] == 'user') {
+          await sendUserNotification(
+            userId: notification['userId'],
+            title: notification['title'],
+            subTitle: notification['subTitle'],
+            languagePrefix: notification['languagePrefix'],
+            tipReceiverId: notification['tipReceiverId'],
+          );
+        }
 
-//       _attemptReconnection();
-//     });
+        pending.remove(notification);
+        await StorageService.setList('pending_notifications', pending);
+      } catch (e) {
+        print('Failed to retry notification: $e');
+      }
+    }
+  }
 
-//     await _startConnectionWithRetry();
+  static Future<void> cacheNotifications(
+      List<Map<String, dynamic>> notifications, String tipReceiverId) async {
+    await StorageService.setList(
+        'cached_notifications_$tipReceiverId', notifications);
+  }
 
-//     await _fetchMissedNotifications();
+  static Future<List<Map<String, dynamic>>> _getCachedNotifications(
+      String tipReceiverId) async {
+    final cached =
+        await StorageService.getList('cached_notifications_$tipReceiverId');
+    return List<Map<String, dynamic>>.from(cached);
+  }
 
-//     _startPendingMessageRetry();
-//   }
+  static Future<void> cacheGroupedNotifications(
+      List<Map<String, dynamic>> notifications, String tipReceiverId) async {
+    await StorageService.setList(
+        'cached_grouped_notifications_$tipReceiverId', notifications);
+  }
 
-//   void _attemptReconnection() {
-//     Timer.periodic(const Duration(seconds: 5), (timer) async {
-//       if (_isConnected) {
-//         timer.cancel();
-//         return;
-//       }
-
-//       try {
-//         print("Attempting to reconnect to SignalR...");
-//         await _hubConnection.start();
-//         _isConnected = true;
-//         print("Reconnected to SignalR successfully");
-//         timer.cancel();
-
-//         _sendPendingMessages();
-//       } catch (e) {
-//         print("Reconnection attempt failed: $e");
-//       }
-//     });
-//   }
-
-//   String _determineCategory(DateTime timestamp) {
-//     final now = DateTime.now();
-//     final today = DateTime(now.year, now.month, now.day);
-//     final yesterday = today.subtract(const Duration(days: 1));
-//     final notificationDate =
-//         DateTime(timestamp.year, timestamp.month, timestamp.day);
-
-//     if (notificationDate.isAtSameMomentAs(today)) {
-//       return 'today';
-//     } else if (notificationDate.isAtSameMomentAs(yesterday)) {
-//       return 'yesterday';
-//     } else {
-//       return 'friday';
-//     }
-//   }
-
-//   /// Retry connection to Hub
-//   Future<void> _startConnectionWithRetry() async {
-//     const maxRetries = 5;
-//     int attempt = 0;
-
-//     while (!_isConnected && attempt < maxRetries) {
-//       try {
-//         await _hubConnection.start();
-//         _isConnected = true;
-//         print("Connected to NotificationHub as $userId");
-
-//         // Send any pending messages after successful connection
-//         _sendPendingMessages();
-//       } catch (e) {
-//         attempt++;
-//         print(
-//             "Connection failed, retrying in 5s... attempt $attempt. Error: $e");
-//         await Future.delayed(const Duration(seconds: 5));
-//       }
-//     }
-
-//     if (!_isConnected) {
-//       print("Failed to connect after $maxRetries attempts");
-//     }
-//   }
-
-//   /// Disconnect from Hub
-//   Future<void> disconnect() async {
-//     _retryTimer?.cancel();
-//     if (_isConnected) {
-//       await _hubConnection.stop();
-//     }
-//     _isConnected = false;
-//   }
-
-//   /// Fetch missed notifications from API
-//   Future<void> _fetchMissedNotifications() async {
-//     try {
-//       final missed = await ApiService.getMissedNotifications(userId);
-//       print("Fetched ${missed.length} missed notifications");
-//       for (var msg in missed) {
-//         final notification = NotificationItem.fromMap(msg);
-//         await _saveToLocal(notification);
-//         onNotificationReceived?.call(notification);
-//       }
-//     } catch (e) {
-//       print("Error fetching missed notifications: $e");
-//     }
-//   }
-
-//   Future<void> _saveToLocal(NotificationItem notification) async {
-//     try {
-//       final box = await Hive.openBox<NotificationItem>('notifications');
-//       await box.put(notification.id, notification);
-//       print("Saved notification locally: ${notification.title}");
-//     } catch (e) {
-//       print("Error saving notification locally: $e");
-//     }
-//   }
-
-//   /// Load notifications from local storage
-//   Future<List<NotificationItem>> loadFromLocal() async {
-//     try {
-//       final box = await Hive.openBox<NotificationItem>('notifications');
-//       final notifications = box.values.toList();
-
-//       // Sort by timestamp (newest first)
-//       notifications.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-
-//       print("Loaded ${notifications.length} notifications from local storage");
-//       return notifications;
-//     } catch (e) {
-//       print("Error loading notifications from local storage: $e");
-//       return [];
-//     }
-//   }
-
-//   /// Send notification to server
-//   Future<void> sendNotification(NotificationItem message) async {
-//     if (!_isConnected) {
-//       print("Not connected, adding message to pending queue");
-//       _pendingMessages.add(message);
-//       return;
-//     }
-
-//     try {
-//       await _hubConnection.invoke("SendNotification", args: [message.toMap()]);
-//       print("Notification sent successfully: ${message.title}");
-//     } catch (e) {
-//       print("Send failed, adding message to pending queue: $e");
-//       _pendingMessages.add(message);
-//     }
-//   }
-
-//   void _startPendingMessageRetry() {
-//     _retryTimer?.cancel();
-//     _retryTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
-//       await _sendPendingMessages();
-//     });
-//   }
-
-//   /// Send all pending messages
-//   Future<void> _sendPendingMessages() async {
-//     if (!_isConnected || _pendingMessages.isEmpty) return;
-
-//     print("Attempting to send ${_pendingMessages.length} pending messages");
-
-//     for (var msg in List.from(_pendingMessages)) {
-//       try {
-//         await _hubConnection.invoke("SendNotification", args: [msg.toMap()]);
-//         _pendingMessages.remove(msg);
-//         print("Pending message sent successfully: ${msg.title}");
-//       } catch (e) {
-//         print("Failed to send pending message: $e");
-//       }
-//     }
-//   }
-
-//   /// Mark notification as read
-//   Future<void> markAsRead(String notificationId) async {
-//     try {
-//       final box = await Hive.openBox<NotificationItem>('notifications');
-//       final notification = box.get(notificationId);
-
-//       if (notification != null) {
-//         final updatedNotification = notification.copyWith(isRead: true);
-//         await box.put(notificationId, updatedNotification);
-//         print("Marked notification as read: $notificationId");
-//       }
-//     } catch (e) {
-//       print("Error marking notification as read: $e");
-//     }
-//   }
-
-//   /// Clear all notifications
-//   Future<void> clearAllNotifications() async {
-//     try {
-//       final box = await Hive.openBox<NotificationItem>('notifications');
-//       await box.clear();
-//       print("All notifications cleared");
-//     } catch (e) {
-//       print("Error clearing notifications: $e");
-//     }
-//   }
-// }
+  static Future<List<Map<String, dynamic>>> _getCachedGroupedNotifications(
+      String tipReceiverId) async {
+    final cached = await StorageService.getList(
+        'cached_grouped_notifications_$tipReceiverId');
+    return List<Map<String, dynamic>>.from(cached);
+  }
+}
