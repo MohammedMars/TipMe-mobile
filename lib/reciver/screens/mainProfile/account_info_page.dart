@@ -9,7 +9,6 @@ import 'package:provider/provider.dart';
 import 'package:tipme_app/core/dio/client/dio_client.dart';
 import 'package:tipme_app/core/dio/service/api-service_path.dart';
 import 'package:tipme_app/di/gitIt.dart';
-import 'package:tipme_app/reciver/widgets/mainProfile_widgets/account_phone_input.dart';
 import 'package:tipme_app/reciver/widgets/mainProfile_widgets/action_button.dart';
 import 'package:tipme_app/reciver/widgets/mainProfile_widgets/bottom_sheet.dart';
 import 'package:tipme_app/data/services/language_service.dart';
@@ -40,7 +39,7 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
 
   bool _isLoading = true;
   bool _isUpdating = false;
-  String? _selectedCountryCode = '+966';
+  String? _selectedCountryCode = '+971';
   bool _hasProfileImage = false;
   String? _userId;
   String? _imagePath;
@@ -48,6 +47,10 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
   Uint8List? _imageBytes;
   String? _imageUrl;
   bool _isImageChanged = false;
+
+  bool _isPhoneVerified = false;
+  String? _originalCountryCode;
+  String? _originalPhoneNumber;
 
   @override
   void initState() {
@@ -73,17 +76,21 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
                 : null;
         _hasProfileImage = _imageUrl != null;
 
-        // Handle phone number and country code
         final fullNumber = userData?.mobileNumber ?? '';
         if (fullNumber.isNotEmpty) {
           if (fullNumber.startsWith('+') && fullNumber.length > 3) {
             _selectedCountryCode = fullNumber.substring(0, 4);
-            _phoneController.text = fullNumber.substring(4);
+            _originalCountryCode = _selectedCountryCode;
+
+            _phoneController.text = fullNumber.substring(4).trim();
+            _originalPhoneNumber = _phoneController.text;
           } else {
             _phoneController.text = fullNumber;
+            _originalPhoneNumber = fullNumber;
           }
         }
 
+        _isPhoneVerified = fullNumber.isNotEmpty;
         _imagePath = userData?.imagePath;
       }
     } catch (e) {
@@ -110,7 +117,9 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
     });
 
     try {
-      final fullPhoneNumber = '${_selectedCountryCode}${_phoneController.text}';
+      final cleanPhoneNumber = _phoneController.text.replaceAll(' ', '');
+
+      final fullPhoneNumber = '$_selectedCountryCode$cleanPhoneNumber';
       final formData = FormData.fromMap({
         'firstName': _firstNameController.text,
         'surName': _surnameController.text,
@@ -122,6 +131,12 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
               MultipartFile.fromBytes(_imageBytes!, filename: "profile.png"),
       });
       await authTipReceiverService.editProfile(_userId!, formData);
+
+      setState(() {
+        _originalCountryCode = _selectedCountryCode;
+        _originalPhoneNumber = _phoneController.text;
+        _isPhoneVerified = true;
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -157,7 +172,7 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.image,
-        withData: true, // مهم للويب
+        withData: true,
       );
 
       if (result != null && result.files.isNotEmpty) {
@@ -230,17 +245,41 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
   void _onPhoneChanged(String phone) {
     setState(() {
       _phoneController.text = phone;
+      _updateVerificationStatus();
     });
   }
 
   void _onCountryChanged(String countryCode) {
     setState(() {
       _selectedCountryCode = countryCode;
+      _updateVerificationStatus();
+    });
+  }
+
+  void _updateVerificationStatus() {
+    final bool isSameCountry = _selectedCountryCode == _originalCountryCode;
+    final bool isSamePhone = _phoneController.text == _originalPhoneNumber;
+    final bool isPhoneNotEmpty = _phoneController.text.isNotEmpty;
+
+    setState(() {
+      _isPhoneVerified = isSameCountry && isSamePhone && isPhoneNotEmpty;
     });
   }
 
   void _onUpdatePressed() {
     _updateProfile();
+  }
+
+  void _onPhoneVerified() {
+    setState(() {
+      _isPhoneVerified = true;
+      _originalCountryCode = _selectedCountryCode;
+      _originalPhoneNumber = _phoneController.text;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Phone number verified successfully')),
+    );
   }
 
   @override
@@ -346,19 +385,14 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
                                 color: AppColors.text),
                           ),
                           const SizedBox(height: 8),
-                          AccountPhoneInput(
+                          CustomPhoneInput(
+                            mode: PhoneInputMode.account,
                             phoneNumber: _phoneController.text,
-                            selectedCountryCode: _selectedCountryCode ?? "",
+                            selectedCountryCode: _selectedCountryCode ?? "+966",
+                            isVerified: _isPhoneVerified,
                             onPhoneChanged: _onPhoneChanged,
                             onCountryChanged: _onCountryChanged,
                           ),
-                          // CustomPhoneInput(
-                          //   controller: _phoneController,
-                          //   onPhoneChanged: _onPhoneChanged,
-                          //   onCountryChanged: _onCountryChanged,
-                          //   phoneNumber: _phoneController.text,
-                          //   isVerified: true,
-                          // ),
                         ],
                       ),
                       const Spacer(),
@@ -366,6 +400,7 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
                         text: 'Update',
                         onPressed: _onUpdatePressed,
                         showArrow: true,
+                        isLoading: _isUpdating,
                       ),
                     ],
                   ),
