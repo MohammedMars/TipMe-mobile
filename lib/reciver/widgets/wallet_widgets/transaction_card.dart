@@ -40,11 +40,11 @@ class TransactionCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  status.toString(),
+                  _getStatus(status),
                   style: AppFonts.smMedium(
                     context,
-                    color:
-                        isPending ? AppColors.warning_500 : AppColors.success,
+                    color: status == -1 ? AppColors.danger_500 :
+                                          isPending ? AppColors.warning_500 : AppColors.success,
                   ),
                 ),
               ],
@@ -56,7 +56,7 @@ class TransactionCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '${isPositive ? '+' : '-'}$amount',
+                  status == 1 ? '+$amount' : amount,
                   style: AppFonts.smMedium(context, color: AppColors.black),
                 ),
                 const SizedBox(height: 2),
@@ -87,5 +87,18 @@ class TransactionCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _getStatus(int status) {
+    switch (status) {
+      case 0:
+        return 'Pending';
+      case 1:
+        return 'Paid';
+      case 2:
+        return 'Redeemed';
+      default:
+        return 'Failed';
+    }
   }
 }

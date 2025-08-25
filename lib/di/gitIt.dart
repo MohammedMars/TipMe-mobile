@@ -6,16 +6,51 @@ import 'package:tipme_app/core/dio/dio_factory.dart';
 import 'package:tipme_app/core/dio/service/api_service_type.dart';
 import 'package:tipme_app/services/signalRService.dart';
 import 'package:tipme_app/services/notificationPopupService.dart';
+import 'package:tipme_app/services/cacheService.dart';
+import 'package:tipme_app/services/qrCodeService.dart';
+import 'package:tipme_app/services/tipReceiverService.dart';
+import 'package:tipme_app/services/tipReceiverStatisticsService.dart';
+import 'package:tipme_app/services/tipTransactionService.dart';
 
 final sl = GetIt.instance;
 final getIt = GetIt.instance;
 
 Future<void> setupServiceLocator() async {
   registerSingilton();
-  
+
   // Register SignalR services
   sl.registerLazySingleton<SignalRService>(() => SignalRService.instance);
-  sl.registerLazySingleton<NotificationPopupService>(() => NotificationPopupService.instance);
+  sl.registerLazySingleton<NotificationPopupService>(
+      () => NotificationPopupService.instance);
+
+  // Register CacheService
+  sl.registerLazySingleton<CacheService>(
+      () => CacheService(sl<DioClient>(instanceName: 'CacheService')));
+
+  // Register QRCodeService with CacheService
+  sl.registerLazySingleton<QRCodeService>(() => QRCodeService(
+        sl<DioClient>(instanceName: 'QrCode'),
+        cacheService: sl<CacheService>(),
+      ));
+
+  // Register TipReceiverService with CacheService
+  sl.registerLazySingleton<TipReceiverService>(() => TipReceiverService(
+        sl<DioClient>(instanceName: 'TipReceiver'),
+        cacheService: sl<CacheService>(),
+      ));
+
+  // Register TipReceiverStatisticsService
+  sl.registerLazySingleton<TipReceiverStatisticsService>(
+    () => TipReceiverStatisticsService(
+        sl<DioClient>(instanceName: 'Statistics'),
+        cacheService: sl<CacheService>()),
+  );
+
+  // Register TipTransactionService with CacheService
+  sl.registerLazySingleton<TipTransactionService>(() => TipTransactionService(
+        dioClient: sl<DioClient>(instanceName: 'TipTransaction'),
+        cacheService: sl<CacheService>(),
+      ));
 }
 
 void registerSingilton() {

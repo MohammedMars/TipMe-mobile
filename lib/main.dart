@@ -13,6 +13,7 @@ import 'package:tipme_app/services/notificationPopupService.dart';
 import 'package:tipme_app/utils/colors.dart';
 import 'package:tipme_app/core/dio/client/dio_client_pool.dart';
 import 'package:tipme_app/providersChangeNotifier/profileSetupProvider.dart';
+import 'package:tipme_app/core/dio/interceptors/auth_interceptor.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -113,6 +114,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
     return OverlaySupport.global(
       child: MaterialApp(
+        navigatorKey: AuthInterceptor.navigatorKey,
         title: 'TipMe',
         debugShowCheckedModeBanner: false,
         supportedLocales: const [

@@ -39,8 +39,7 @@ class _SplashScreenState extends State<SplashScreen>
     Timer(const Duration(seconds: 3), () {
       StorageService.hasKey('user_token').then((hasToken) async {
         if (hasToken) {
-          final service =
-              TipReceiverService(sl<DioClient>(instanceName: 'TipReceiver'));
+          final service = sl<TipReceiverService>();
           var response = await service.GetMe();
           if (response!.data!.isCompleted == true) {
             Navigator.of(context)

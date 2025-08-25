@@ -42,7 +42,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _initializeService() {
-    _tipReceiverService = TipReceiverService(sl<DioClient>(instanceName: 'TipReceiver'));
+    _tipReceiverService = sl<TipReceiverService>();
     _cacheService = CacheService(sl<DioClient>(instanceName: 'CacheService'));
   }
 
@@ -407,10 +407,10 @@ class _ProfilePageState extends State<ProfilePage> {
             TextButton(
               onPressed: () async {
                 Navigator.of(context).pop();
-
                 try {
                   await StorageService.clear();
-
+                  final cacheService = getIt<CacheService>();
+                  cacheService.clearAllCache();
                   Navigator.of(context).pushNamedAndRemoveUntil(
                     AppRoutes.signInUp,
                     (route) => false,

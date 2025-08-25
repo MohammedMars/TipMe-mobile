@@ -71,8 +71,7 @@ class _VerifyPhonePageState extends State<VerifyPhonePage> {
         if (response.success) {
           await _saveUserData(response.data);
           if (widget.isLogin) {
-            final service =
-                TipReceiverService(sl<DioClient>(instanceName: 'TipReceiver'));
+            final service = sl<TipReceiverService>();
             var response = await service.GetMe();
             print("response: ${response!.data!.isCompleted}");
             if (response!.data!.isCompleted == true) {

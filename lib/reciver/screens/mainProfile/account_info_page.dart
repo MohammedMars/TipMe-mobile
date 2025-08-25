@@ -34,8 +34,7 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
   final TextEditingController _surnameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
 
-  final tipReceiverService =
-      TipReceiverService(sl<DioClient>(instanceName: 'TipReceiver'));
+  final tipReceiverService = sl<TipReceiverService>();
   final authTipReceiverService =
       AuthTipReceiverService(sl<DioClient>(instanceName: 'AuthTipReceiver'));
 
