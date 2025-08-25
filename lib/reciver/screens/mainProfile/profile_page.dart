@@ -1,20 +1,108 @@
 // lib/auth/screens/profile/profile_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:tipme_app/core/dio/client/dio_client.dart';
+import 'package:tipme_app/core/dio/service/api-service_path.dart';
 import 'package:tipme_app/core/storage/storage_service.dart';
+import 'package:tipme_app/di/gitIt.dart';
 import 'package:tipme_app/reciver/widgets/mainProfile_widgets/custom_list_card.dart';
-import 'package:tipme_app/reciver/widgets/wallet_widgets/custom_top_bar.dart';
 import 'package:tipme_app/routs/app_routs.dart';
+import 'package:tipme_app/services/tipReceiverService.dart';
+import 'package:tipme_app/services/cacheService.dart';
 import 'package:tipme_app/utils/app_font.dart';
 import 'package:tipme_app/utils/colors.dart';
+import 'package:tipme_app/viewModels/tipReceiveerData.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   final String? backgroundSvgPath;
 
   const ProfilePage({
     Key? key,
     this.backgroundSvgPath,
   }) : super(key: key);
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  TipReceiveerData? _userData;
+  bool _isLoading = true;
+  String? _errorMessage;
+  TipReceiverService? _tipReceiverService;
+  CacheService? _cacheService;
+  String? _cityName;
+  String? _countryName;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeService();
+    _loadUserData();
+  }
+
+  void _initializeService() {
+    _tipReceiverService = TipReceiverService(sl<DioClient>(instanceName: 'TipReceiver'));
+    _cacheService = CacheService(sl<DioClient>(instanceName: 'CacheService'));
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+
+      final response = await _tipReceiverService?.GetMe();
+      
+      if (response != null && response.success) {
+        setState(() {
+          _userData = response.data;
+        });
+        
+        // Load city and country names from cache service
+        await _loadLocationNames(_userData?.countryId, _userData?.cityId);
+        
+        setState(() {
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _errorMessage = response?.message ?? 'Failed to load user data';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error loading user data: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadLocationNames(String? countryId, String? cityId) async {
+    try {
+      if (countryId != null && _cacheService != null) {
+        final countries = await _cacheService!.getCountries();
+        final country = countries.firstWhere(
+          (c) => c.id == countryId,
+          orElse: () => throw Exception("Country not found"),
+        );
+        _countryName = country.name;
+
+        if (cityId != null) {
+          final cities = await _cacheService!.getCities(countryId);
+          final city = cities.firstWhere(
+            (c) => c.id == cityId,
+            orElse: () => throw Exception("City not found"),
+          );
+          _cityName = city.name;
+        }
+      }
+    } catch (e) {
+      print('Error loading location names: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,10 +119,10 @@ class ProfilePage extends StatelessWidget {
               ),
               child: Stack(
                 children: [
-                  if (backgroundSvgPath != null)
+                  if (widget.backgroundSvgPath != null)
                     Positioned.fill(
                       child: SvgPicture.asset(
-                        backgroundSvgPath!,
+                        widget.backgroundSvgPath!,
                         fit: BoxFit.cover,
                         colorFilter: ColorFilter.mode(
                           Colors.white.withOpacity(0.1),
@@ -66,57 +154,7 @@ class ProfilePage extends StatelessWidget {
                     bottom: 40,
                     left: 0,
                     right: 0,
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                          ),
-                          child: ClipOval(
-                            child: Image.asset(
-                              'assets/images/bank.png',
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  color: Colors.grey[300],
-                                  child: const Icon(
-                                    Icons.person,
-                                    size: 40,
-                                    color: Colors.grey,
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Esther Howard',
-                          style: AppFonts.xlBold(
-                            context,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Riyadh, Saudi Arabia',
-                          style: AppFonts.smMedium(
-                            context,
-                            color: Colors.white.withOpacity(0.9),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '+966 12 345 6789',
-                          style: AppFonts.smMedium(
-                            context,
-                            color: Colors.white.withOpacity(0.9),
-                          ),
-                        ),
-                      ],
-                    ),
+                    child: _buildUserInfo(),
                   ),
                 ],
               ),
@@ -227,6 +265,121 @@ class ProfilePage extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildUserInfo() {
+    if (_isLoading) {
+      return const Column(
+        children: [
+          CircularProgressIndicator(color: Colors.white),
+          SizedBox(height: 16),
+          Text(
+            'Loading...',
+            style: TextStyle(color: Colors.white),
+          ),
+        ],
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Column(
+        children: [
+          Container(
+            width: 100,
+            height: 100,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.grey,
+            ),
+            child: const Icon(
+              Icons.person,
+              size: 40,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Error loading profile',
+            style: AppFonts.xlBold(
+              context,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _errorMessage!,
+            style: AppFonts.smMedium(
+              context,
+              color: Colors.white.withOpacity(0.9),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      children: [
+        Container(
+          width: 100,
+          height: 100,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+          ),
+          child: ClipOval(
+            child: _userData?.imagePath != null && _userData!.imagePath!.isNotEmpty
+                ? Image.network(
+                    "${ApiServicePath.fileServiceUrl}/${_userData!.imagePath}",
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.grey[300],
+                        child: const Icon(
+                          Icons.person,
+                          size: 40,
+                          color: Colors.grey,
+                        ),
+                      );
+                    },
+                  )
+                : Container(
+                    color: Colors.grey[300],
+                    child: const Icon(
+                      Icons.person,
+                      size: 40,
+                      color: Colors.grey,
+                    ),
+                  ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          '${_userData?.firstName ?? ''} ${_userData?.surName ?? ''}'.trim(),
+          style: AppFonts.xlBold(
+            context,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 4),
+        if (_cityName != null || _countryName != null)
+          Text(
+            '${_cityName ?? ''}, ${_countryName ?? ''}'.replaceAll(RegExp(r'^, |, $'), ''),
+            style: AppFonts.smMedium(
+              context,
+              color: Colors.white.withOpacity(0.9),
+            ),
+          ),
+        const SizedBox(height: 4),
+        if (_userData?.mobileNumber != null)
+          Text(
+            _userData!.mobileNumber!,
+            style: AppFonts.smMedium(
+              context,
+              color: Colors.white.withOpacity(0.9),
+            ),
+          ),
+      ],
     );
   }
 

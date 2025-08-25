@@ -5,6 +5,8 @@ class TipReceiveerData {
   final String? id;
   final String? imagePath;
   final bool? isCompleted;
+  final String? countryId;
+  final String? cityId;
 
   TipReceiveerData({
     required this.mobileNumber,
@@ -13,6 +15,8 @@ class TipReceiveerData {
     this.id,
     this.imagePath,
     this.isCompleted,
+    this.countryId,
+    this.cityId,
   });
 
   factory TipReceiveerData.fromJson(Map<String, dynamic> json) {
@@ -23,6 +27,8 @@ class TipReceiveerData {
       id: json['id'] as String?,
       imagePath: json['imagePath'] as String?,
       isCompleted: json['isCompleted'] as bool?,
+      countryId: json['countryId'] as String?,
+      cityId: json['cityId'] as String?,
     );
   }
 }

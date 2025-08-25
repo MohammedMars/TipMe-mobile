@@ -13,6 +13,7 @@ class ServiceConfigration {
     ApiServiceType.Settings: ApiServicePath.settingsPath,
     ApiServiceType.AppSettings: ApiServicePath.appSettingsPath,
     ApiServiceType.SupportIssue: ApiServicePath.supportIssuePath,
+    ApiServiceType.Notification: ApiServicePath.notificationPath,
   };
   Map<ApiServiceType, String> get config => _config;
 }

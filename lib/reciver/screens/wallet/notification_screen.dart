@@ -3,14 +3,16 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:tipme_app/core/storage/storage_service.dart';
+import 'package:tipme_app/core/dio/client/dio_client.dart';
 import 'package:tipme_app/data/services/language_service.dart';
+import 'package:tipme_app/di/gitIt.dart';
 import 'package:tipme_app/reciver/widgets/wallet_widgets/custom_top_bar.dart';
 import 'package:tipme_app/reciver/widgets/wallet_widgets/notification_card.dart';
-import 'package:tipme_app/services/notification_service.dart';
-import 'package:tipme_app/services/notification_hub_service.dart';
+import 'package:tipme_app/services/notificationService.dart';
+import 'package:tipme_app/viewModels/groupedNotificationModel.dart';
 import 'package:tipme_app/utils/app_font.dart';
 import 'package:tipme_app/utils/colors.dart';
+import 'package:tipme_app/viewModels/notificationDataModel.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({Key? key}) : super(key: key);
@@ -20,15 +22,17 @@ class NotificationScreen extends StatefulWidget {
 }
 
 class _NotificationScreenState extends State<NotificationScreen> {
-  List<NotificationItem> _notifications = [];
+  List<GroupedNotificationModel> _groupedNotifications = [];
   bool _isLoading = true;
   StreamSubscription? _notificationSubscription;
+  late NotificationService _notificationService;
 
   @override
   void initState() {
     super.initState();
-    _loadNotifications();
-    _setupRealTimeNotifications();
+    _notificationService =
+        NotificationService(sl<DioClient>(instanceName: 'Notification'));
+    _loadGroupedNotifications();
   }
 
   @override
@@ -37,56 +41,32 @@ class _NotificationScreenState extends State<NotificationScreen> {
     super.dispose();
   }
 
-  Future<void> _loadNotifications() async {
-    setState(() => _isLoading = true);
-
+  Future<void> _loadGroupedNotifications() async {
     try {
-      final userId = await StorageService.get('user_id') ?? 'anonymous';
-      final apiNotifications =
-          await NotificationService.getUserNotifications(userId);
-      final storedNotifications =
-          await NotificationHubService.getStoredNotifications();
-      final allNotifications = [...apiNotifications, ...storedNotifications];
+      setState(() {
+        _isLoading = true;
+      });
 
-      _notifications = allNotifications
-          .map((n) => NotificationItem(
-                id: n['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-                title: n['title'] ?? 'No Title',
-                subtitle: n['subTitle'] ?? n['content'] ?? '',
-                time: _formatTime(n['timestamp']),
-                isRead: n['isRead'] ?? false,
-                category: _getCategory(n['timestamp']),
-                // for now it will be categoried based on the time that spend on it
-                // يعني اذا صار مارق عليها مثلا يوم تلقائيا بتروح لجاتيجوري امبارح
-              ))
-          .toList();
+      final response = await _notificationService.getAllNotificationsGrouped();
+
+      if (response.success && response.data != null) {
+        setState(() {
+          _groupedNotifications = response.data!;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _groupedNotifications = [];
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       print('Error loading notifications: $e');
-
-      // for now i add this becuase there is no notification data to appear it in the screen as the api return null data
-    }
-
-    setState(() => _isLoading = false);
-  }
-
-  void _setupRealTimeNotifications() {
-    final hubService = NotificationHubService();
-    _notificationSubscription =
-        hubService.notificationStream.listen((notification) {
       setState(() {
-        _notifications.insert(
-            0,
-            NotificationItem(
-              id: notification['id'] ??
-                  DateTime.now().millisecondsSinceEpoch.toString(),
-              title: notification['title'] ?? 'New Notification',
-              subtitle: notification['content'] ?? '',
-              time: 'Just now',
-              isRead: false,
-              category: 'today',
-            ));
+        _groupedNotifications = [];
+        _isLoading = false;
       });
-    });
+    }
   }
 
   String _formatTime(String? timestamp) {
@@ -102,36 +82,44 @@ class _NotificationScreenState extends State<NotificationScreen> {
     return '${difference.inDays}d';
   }
 
-  String _getCategory(String? timestamp) {
-    if (timestamp == null) return 'older';
-
-    final dateTime = DateTime.parse(timestamp);
-    final now = DateTime.now();
-
-    if (dateTime.year == now.year &&
-        dateTime.month == now.month &&
-        dateTime.day == now.day) {
-      return 'today';
-    } else if (dateTime.year == now.year &&
-        dateTime.month == now.month &&
-        dateTime.day == now.day - 1) {
-      return 'yesterday';
-    } else {
-      return 'older';
+  List<NotificationDataModel> _getNotificationsByCategory(String category) {
+    List<NotificationDataModel> notifications = [];
+    
+    for (var group in _groupedNotifications) {
+      if (group.notifications != null && group.categoryDate == category) {
+        notifications.addAll(group.notifications!);
+      }
     }
+    
+    return notifications;
+  }
+
+  String _mapCategoryName(String? apiCategory) {
+    if (apiCategory == null) return 'older';
+    
+    final lowerCategory = apiCategory.toLowerCase();
+    
+    if (lowerCategory == 'today') return 'today';
+    if (lowerCategory == 'yesterday') return 'yesterday';
+    
+    // Any other category (like "23 Agosto 25") maps to "older"
+    return 'older';
   }
 
   void _markAsRead(String notificationId) {
     setState(() {
-      final index = _notifications.indexWhere((n) => n.id == notificationId);
-      if (index != -1) {
-        _notifications[index] = _notifications[index].copyWith(isRead: true);
+      for (var group in _groupedNotifications) {
+        if (group.notifications != null) {
+          final notificationIndex =
+              group.notifications!.indexWhere((n) => n.id == notificationId);
+          if (notificationIndex != -1) {
+            // Note: Since NotificationDataModel fields are final, we would need to create a new instance
+            // For now, we'll just refresh the data or implement a proper update mechanism
+            break;
+          }
+        }
       }
     });
-  }
-
-  List<NotificationItem> _getNotificationsByCategory(String category) {
-    return _notifications.where((n) => n.category == category).toList();
   }
 
   @override
@@ -177,17 +165,26 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 ),
                 child: _isLoading
                     ? const Center(child: CircularProgressIndicator())
-                    : SingleChildScrollView(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildNotificationSection('Today', 'today'),
-                            const SizedBox(height: 16),
-                            _buildNotificationSection('Yesterday', 'yesterday'),
-                            const SizedBox(height: 16),
-                            _buildNotificationSection('Older', 'older'),
-                          ],
+                    : RefreshIndicator(
+                        onRefresh: _loadGroupedNotifications,
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ..._groupedNotifications.map((group) {
+                                if (group.categoryDate != null && group.notifications != null && group.notifications!.isNotEmpty) {
+                                  return Column(
+                                    children: [
+                                      _buildNotificationSection(group.categoryDate!, group.categoryDate!),
+                                      const SizedBox(height: 16),
+                                    ],
+                                  );
+                                }
+                                return const SizedBox.shrink();
+                              }).toList(),
+                            ],
+                          ),
                         ),
                       ),
               ),
@@ -199,9 +196,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   Widget _buildNotificationSection(String title, String category) {
-    final categoryNotifications = _getNotificationsByCategory(category);
+    final notifications = _getNotificationsByCategory(category);
 
-    if (categoryNotifications.isEmpty) {
+    if (notifications.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -213,52 +210,16 @@ class _NotificationScreenState extends State<NotificationScreen> {
           style: AppFonts.lgSemiBold(context, color: Colors.black),
         ),
         const SizedBox(height: 16),
-        ...categoryNotifications
+        ...notifications
             .map((notification) => NotificationCard(
-                  title: notification.title,
-                  subtitle: notification.subtitle,
-                  time: notification.time,
-                  isRead: notification.isRead,
-                  onTap: () => _markAsRead(notification.id),
+                  title: notification.title ?? 'No Title',
+                  subtitle: notification.subtitle ?? 'No Content',
+                  time: _formatTime(notification.createdAt?.toIso8601String()),
+                  isRead: notification.isRead ?? false,
+                  onTap: () => _markAsRead(notification.id ?? ''),
                 ))
             .toList(),
       ],
-    );
-  }
-}
-
-class NotificationItem {
-  final String id;
-  final String title;
-  final String subtitle;
-  final String time;
-  final bool isRead;
-  final String category;
-
-  const NotificationItem({
-    required this.id,
-    required this.title,
-    required this.subtitle,
-    required this.time,
-    required this.isRead,
-    required this.category,
-  });
-
-  NotificationItem copyWith({
-    String? id,
-    String? title,
-    String? subtitle,
-    String? time,
-    bool? isRead,
-    String? category,
-  }) {
-    return NotificationItem(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      subtitle: subtitle ?? this.subtitle,
-      time: time ?? this.time,
-      isRead: isRead ?? this.isRead,
-      category: category ?? this.category,
     );
   }
 }

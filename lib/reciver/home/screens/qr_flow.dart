@@ -16,6 +16,7 @@ import 'package:tipme_app/reciver/home/widgets/qr_content.dart';
 import 'package:tipme_app/reciver/home/widgets/quick_icon.dart';
 import 'package:tipme_app/routs/app_routs.dart';
 import 'package:tipme_app/data/services/language_service.dart';
+import 'package:tipme_app/services/tipReceiverService.dart';
 import 'package:tipme_app/services/tipReceiverStatisticsService.dart';
 import 'package:tipme_app/utils/colors.dart';
 import 'package:tipme_app/utils/app_font.dart'; // Add this import
@@ -23,6 +24,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:tipme_app/services/qrCodeService.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:tipme_app/viewModels/tipReceiveerData.dart';
 
 class HomeScreen extends StatefulWidget {
   final Uint8List? qrBytes;
@@ -56,8 +58,10 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isLoading = true;
   String? errorMessage;
   QRCodeService? qrCodeService;
+  TipReceiverService? tipReceiverService;
   String _currency = "";
   double _balance = 0.0;
+  TipReceiveerData? _tipReceiverData;
 
   @override
   void initState() {
@@ -66,17 +70,27 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadQRCodeFromBackend();
     _loadSavedLogo();
     _fetchBalance();
+    _loadTipReceiverData();
   }
+
+  Future<void> _loadTipReceiverData() async {
+    final response = await tipReceiverService?.GetMe();
+    if (response != null && response.success) {
+      setState(() {
+        _tipReceiverData = response.data;
+      });
+    }
+  }
+
 
   Future<void> _initializeScreen() async {
     qrCodeService = QRCodeService(sl<DioClient>(instanceName: 'QrCode'));
+    tipReceiverService = TipReceiverService(sl<DioClient>(instanceName: 'TipReceiver'));
     _currency = await StorageService.get('Currency') ?? "";
   }
 
   Future<void> _loadQRCodeFromBackend() async {
     final userId = await StorageService.get('user_id');
-    print("----------------------------------------------");
-    print(userId);
     setState(() {
       isLoading = true;
       errorMessage = null;
@@ -214,7 +228,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _buildWelcomeSection(languageService),
         const SizedBox(height: 24), // 24px space between welcome text and card
         // Available balance card
-        AvailableBalanceCard(
+        const AvailableBalanceCard(
           transferDate: '', // Empty since we're not showing it
           backgroundImagePath: 'assets/images/available-balance.png',
           iconPath: 'assets/icons/logo-without-text.svg',
@@ -232,7 +246,9 @@ class _HomeScreenState extends State<HomeScreen> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
-          languageService.getText('Welcome'),
+          _tipReceiverData != null 
+            ? "${languageService.getText('Welcome')} ${_tipReceiverData!.firstName ?? ''}"
+            : "${languageService.getText('Welcome')}",
           textAlign: TextAlign.center,
           style: AppFonts.lgBold(context, color: AppColors.white),
         ),
@@ -421,7 +437,6 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
   }
-
 
   Future<void> _saveQrToGallery(
       Uint8List? qrBytes, BuildContext context) async {

@@ -51,6 +51,8 @@ dependencies:
   country_icons: ^2.0.0
   hive_flutter: ^1.1.0
   connectivity_plus: ^6.0.3
+  fluttertoast: ^8.2.4
+  overlay_support: ^2.1.0
   # http: ^1.1.2              # تعديل
 dev_dependencies:
   flutter_test:
