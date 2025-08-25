@@ -9,16 +9,26 @@ import 'package:tipme_app/utils/colors.dart';
 import 'routs/app_routs.dart';
 import 'package:provider/provider.dart';
 import 'data/services/language_service.dart';
+import 'services/notification_hub_service.dart';
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   registerSingilton();
   DioClientPool.instance.init();
+
+  // Initialize notification hub connection
+  try {
+    final notificationService = NotificationHubService();
+    await notificationService.connectToHub();
+  } catch (e) {
+    print('Failed to connect to notification hub: $e');
+  }
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => LanguageService()),
-        ChangeNotifierProvider(create: (context) => ProfileSetupProvider()), // 👈 added
+        ChangeNotifierProvider(create: (context) => ProfileSetupProvider()), 
       ],
       child: const MyApp(),
     ),

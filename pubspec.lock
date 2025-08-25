@@ -496,6 +496,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.5.0"
+  message_pack_dart:
+    dependency: transitive
+    description:
+      name: message_pack_dart
+      sha256: "71b9f0ff60e5896e60b337960bb535380d7dba3297b457ac763ccae807385b59"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.1"
   meta:
     dependency: transitive
     description:
@@ -788,10 +796,10 @@ packages:
     dependency: "direct main"
     description:
       name: signalr_netcore
-      sha256: "02d2e399c5a4b5587dfaa0a1da23502f7f438e8b92ac20bc5e652a796600d11a"
+      sha256: "7e04ab4b541bff9437f83af701ef7b0c413c65437df67a65cf5580e5b842051e"
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.7+2-nullsafety.3"
+    version: "1.3.7"
   sky_engine:
     dependency: transitive
     description: flutter
@@ -821,14 +829,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.10.0"
-  sprintf:
+  sse:
     dependency: transitive
     description:
-      name: sprintf
-      sha256: "1fc9ffe69d4df602376b52949af107d8f5703b77cda567c4d7d86a0693120f23"
+      name: sse
+      sha256: "8168874cdbd42c36ea118ba9f88a656ad97f604f28c976c61cb6d5b281c5319c"
       url: "https://pub.dev"
     source: hosted
-    version: "7.0.0"
+    version: "4.1.4"
+  sse_channel2:
+    dependency: transitive
+    description:
+      name: sse_channel2
+      sha256: be9bd58151b38e2cceb5c507bad746efa40c601a22b63d46e1a7cb60fc5cd24f
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.4"
   stack_trace:
     dependency: transitive
     description:
@@ -885,6 +901,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.1"
+  tuple:
+    dependency: transitive
+    description:
+      name: tuple
+      sha256: a97ce2013f240b2f3807bcbaf218765b6f301c3eff91092bcfa23a039e7dd151
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.2"
   typed_data:
     dependency: transitive
     description:
@@ -961,10 +985,10 @@ packages:
     dependency: transitive
     description:
       name: uuid
-      sha256: a5be9ef6618a7ac1e964353ef476418026db906c4facdedaa299b7a2e71690ff
+      sha256: "648e103079f7c64a36dc7d39369cabb358d377078a051d6ae2ad3aa539519313"
       url: "https://pub.dev"
     source: hosted
-    version: "4.5.1"
+    version: "3.0.7"
   vector_graphics:
     dependency: transitive
     description:

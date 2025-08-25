@@ -18,38 +18,20 @@ class NotificationScreen extends StatefulWidget {
 
 class _NotificationScreenState extends State<NotificationScreen> {
   List<NotificationItem> _notifications = [];
-  late NotificationService _notificationService;
   bool _isLoading = true;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _notificationService = NotificationService();
     _setupNotifications();
   }
 
   void _setupNotifications() async {
     try {
-      // Set up the callback for new notifications
-      _notificationService.onNotificationReceived = (notification) {
-        if (mounted) {
-          setState(() {
-            _notifications = [notification, ..._notifications];
-          });
-        }
-      };
-
       final userId = await _getUserId();
-
-      await _notificationService.connect(userId: userId);
-
-      // Load existing notifications from local storage
-      final localNotifications = await _notificationService.loadFromLocal();
-
       if (mounted) {
         setState(() {
-          _notifications = [...localNotifications];
           _isLoading = false;
         });
       }
@@ -70,16 +52,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   void _markAsRead(String notificationId) async {
     try {
-      // Update UI immediately
       setState(() {
         final index = _notifications.indexWhere((n) => n.id == notificationId);
         if (index != -1) {
           _notifications[index] = _notifications[index].copyWith(isRead: true);
         }
       });
-
-      // Update in local storage
-      await _notificationService.markAsRead(notificationId);
     } catch (e) {
       print("Error marking notification as read: $e");
     }
@@ -91,11 +69,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
         _notifications =
             _notifications.map((n) => n.copyWith(isRead: true)).toList();
       });
-
-      // Update all in local storage
-      for (var notification in _notifications) {
-        await _notificationService.markAsRead(notification.id);
-      }
     } catch (e) {
       print("Error marking all notifications as read: $e");
     }
@@ -107,7 +80,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   @override
   void dispose() {
-    _notificationService.disconnect();
     super.dispose();
   }
 
