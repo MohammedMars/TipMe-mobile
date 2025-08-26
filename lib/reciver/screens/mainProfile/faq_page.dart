@@ -21,32 +21,18 @@ class FAQPage extends StatefulWidget {
 class _FAQPageState extends State<FAQPage> {
   late final AppSettingsService _appSettingsService;
   late Future<List<FAQData>> _faqFuture;
-  late String _currentLanguage;
 
   @override
   void initState() {
     super.initState();
     _appSettingsService =
         AppSettingsService(sl<DioClient>(instanceName: 'AppSettings'));
-    _currentLanguage = 'en';
     _loadFAQs();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final languageService =
-        Provider.of<LanguageService>(context, listen: false);
-    if (_currentLanguage != languageService.currentLanguage) {
-      _currentLanguage = languageService.currentLanguage;
-      _loadFAQs();
-    }
   }
 
   void _loadFAQs() {
     setState(() {
-      _faqFuture =
-          _appSettingsService.getFAQ(lang: _currentLanguage).then((response) {
+      _faqFuture = _appSettingsService.getFAQ(lang: 'en').then((response) {
         if (response.success && response.data != null) {
           return response.data!;
         } else {
@@ -58,13 +44,15 @@ class _FAQPageState extends State<FAQPage> {
 
   @override
   Widget build(BuildContext context) {
+    final languageService = Provider.of<LanguageService>(context);
+
     return Scaffold(
       backgroundColor: AppColors.secondary,
       body: Column(
         children: [
           CustomTopBar.withTitle(
             title: Text(
-              'FAQ',
+              languageService.getText('faq'),
               style: AppFonts.lgBold(context, color: AppColors.white),
             ),
             leading: GestureDetector(
@@ -101,23 +89,42 @@ class _FAQPageState extends State<FAQPage> {
                 future: _faqFuture,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary, // Optional: match your theme
+                      ),
+                    );
                   } else if (snapshot.hasError) {
                     return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text('No FAQs found'),
+                          Text(
+                            languageService.getText('noFaqsFound'),
+                            style: AppFonts.mdMedium(context), // Apply font
+                          ),
                           const SizedBox(height: 16),
                           ElevatedButton(
                             onPressed: _loadFAQs,
-                            child: const Text('Retry'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                            ),
+                            child: Text(
+                              languageService.getText('retry'),
+                              style: AppFonts.smMedium(context,
+                                  color: AppColors.white),
+                            ),
                           ),
                         ],
                       ),
                     );
                   } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Center(child: Text('No FAQs available'));
+                    return Center(
+                      child: Text(
+                        languageService.getText('noFaqsAvailable'),
+                        style: AppFonts.mdMedium(context), // Apply font
+                      ),
+                    );
                   }
 
                   return ListView.separated(
@@ -130,6 +137,9 @@ class _FAQPageState extends State<FAQPage> {
                       return ExpandableFAQCard(
                         question: faq.question,
                         answer: faq.answer,
+                        // Apply font styles to the ExpandableFAQCard
+                        questionStyle: AppFonts.mdSemiBold(context),
+                        answerStyle: AppFonts.smRegular(context),
                       );
                     },
                   );

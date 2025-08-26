@@ -1,4 +1,3 @@
-// lib/auth/screens/profile/pivacy_policy.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tipme_app/reciver/widgets/mainProfile_widgets/terms_section_card.dart';
@@ -14,54 +13,47 @@ class PrivacyPolicyPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final languageService = Provider.of<LanguageService>(context);
 
-    // Terms and Conditions data
-    final List<Map<String, dynamic>> termsData = [
+    // Privacy Policy data
+    final List<Map<String, dynamic>> privacyData = [
       {
-        'title': 'Use of Service',
-        'description':
-            'You agree to use the service only for lawful purposes and in accordance with these terms. You are responsible for any activity that occurs under your account.',
+        'title': languageService.getText('informationWeCollect'),
+        'description': languageService.getText('informationWeCollectDesc'),
         'isNumbered': true,
         'number': 1,
       },
       {
-        'title': 'Account Registration',
-        'description':
-            'To access certain features, you may need to create an account. You are responsible for keeping your login information secure and notifying us immediately of any unauthorized use.',
+        'title': languageService.getText('howWeUseInfo'),
+        'description': languageService.getText('howWeUseInfoDesc'),
         'isNumbered': true,
         'number': 2,
       },
       {
-        'title': 'Intellectual Property',
-        'description':
-            'All content, including logos, images, text, and software, is owned by [Your Company Name] and protected by copyright and other laws.',
+        'title': languageService.getText('dataSharing'),
+        'description': languageService.getText('dataSharingDesc'),
         'isNumbered': true,
         'number': 3,
       },
       {
-        'title': 'Prohibited Activities',
-        'description':
-            'You may not use the service for any unlawful purpose or in a way that could harm, disable, or interfere with the site or its users.',
+        'title': languageService.getText('dataSecurity'),
+        'description': languageService.getText('dataSecurityDesc'),
         'isNumbered': true,
         'number': 4,
       },
       {
-        'title': 'Termination',
-        'description':
-            'We may suspend or terminate your access to the service at any time for violations of these terms.',
+        'title': languageService.getText('yourRights'),
+        'description': languageService.getText('yourRightsDesc'),
         'isNumbered': true,
         'number': 5,
       },
       {
-        'title': 'Changes to Terms',
-        'description':
-            'We may update these terms from time to time. Any changes will be posted on this page with the updated date.',
+        'title': languageService.getText('cookies'),
+        'description': languageService.getText('cookiesDesc'),
         'isNumbered': true,
         'number': 6,
       },
       {
-        'title': 'Contact Us',
-        'description':
-            'If you have any questions about these Terms and Conditions, please contact us at support@tipme.com.',
+        'title': languageService.getText('contactUsPrivacy'),
+        'description': languageService.getText('contactUsPrivacyDesc'),
         'isNumbered': true,
         'number': 7,
       },
@@ -74,7 +66,7 @@ class PrivacyPolicyPage extends StatelessWidget {
           children: [
             CustomTopBar.withTitle(
               title: Text(
-                'Terms and Condition',
+                languageService.getText('privacyPolicy'),
                 style: AppFonts.lgBold(context, color: AppColors.white),
               ),
               leading: GestureDetector(
@@ -119,13 +111,13 @@ class PrivacyPolicyPage extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Last Updated: 5 April, 2025',
+                              languageService.getText('privacyLastUpdated'),
                               style: AppFonts.mdBold(context,
                                   color: AppColors.black),
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              'At TipMe, your privacy is important to us. This Privacy Policy explains how we collect, use, and protect your information.',
+                              languageService.getText('privacyIntro'),
                               style: AppFonts.smRegular(
                                 context,
                                 color: AppColors.text,
@@ -136,13 +128,13 @@ class PrivacyPolicyPage extends StatelessWidget {
                         ),
                       ),
 
-                      // Terms sections
-                      ...termsData
-                          .map((term) => TermsSectionCard(
-                                title: term['title'],
-                                description: term['description'],
-                                isNumbered: term['isNumbered'] ?? true,
-                                number: term['number'],
+                      // Privacy policy sections
+                      ...privacyData
+                          .map((policy) => TermsSectionCard(
+                                title: policy['title'],
+                                description: policy['description'],
+                                isNumbered: policy['isNumbered'] ?? true,
+                                number: policy['number'],
                               ))
                           .toList(),
 

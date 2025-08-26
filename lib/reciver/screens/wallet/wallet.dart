@@ -404,7 +404,8 @@ class _WalletScreenState extends State<WalletScreen> {
               left: 0,
               right: 0,
               child: AvailableBalanceCard(
-                transferDate: 'Next Transfer Date: ${_getNextWeekFirstDay()}',
+                transferDate:
+                    '${languageService.getText('nextTransferDate')}: ${_getNextWeekFirstDay()}',
                 backgroundImagePath: 'assets/images/available-balance.png',
                 iconPath: 'assets/icons/logo-without-text.svg',
                 helpTitleKey: 'myTransfers',
@@ -742,7 +743,7 @@ class _StatsPeriodDropdownState extends State<StatsPeriodDropdown> {
                     ],
                   ),
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
+                    mainAxisSize: MainAxisSize.max,
                     children: _periods.asMap().entries.map((entry) {
                       int index = entry.key;
                       String period = entry.value;

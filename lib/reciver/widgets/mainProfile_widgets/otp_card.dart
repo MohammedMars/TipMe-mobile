@@ -13,13 +13,13 @@ import 'package:tipme_app/di/gitIt.dart';
 ValueNotifier<bool> isPhoneVerified = ValueNotifier(false);
 
 void showOtpPopup(
-  BuildContext context, 
+  BuildContext context,
   String phoneNumber,
   VoidCallback onVerificationSuccess, {
   String? userId,
 }) {
   final authService = sl<AuthTipReceiverService>();
-  
+
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -44,28 +44,31 @@ void showOtpPopup(
       void onVerify() async {
         if (otpCode.length == 6) {
           isVerifying.value = true;
-          
+
           bool verificationSuccess = false;
-          
+
           // Call ChangeMobileNumber API if userId is provided
           if (userId != null) {
             try {
               print('Verifying OTP and changing mobile number: $otpCode');
-              
+
               final verifyDto = VerifyOtpDto(
                 mobileNumber: phoneNumber,
                 otp: otpCode,
               );
-              final changeResponse = await authService.changeMobileNumber(userId, verifyDto);
-              
-              print('Change mobile number response: ${changeResponse.success}, message: ${changeResponse.message}');
-              
+              final changeResponse =
+                  await authService.changeMobileNumber(userId, verifyDto);
+
+              print(
+                  'Change mobile number response: ${changeResponse.success}, message: ${changeResponse.message}');
+
               if (changeResponse.success) {
                 verificationSuccess = true;
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(changeResponse.message ?? 'Failed to verify OTP'),
+                    content:
+                        Text(changeResponse.message ?? 'Failed to verify OTP'),
                     backgroundColor: Colors.red,
                   ),
                 );
@@ -83,9 +86,9 @@ void showOtpPopup(
             // Default behavior for non-mobile-change scenarios
             verificationSuccess = true;
           }
-          
+
           isVerifying.value = false;
-          
+
           if (verificationSuccess) {
             print("OTP Verified: $otpCode");
 
@@ -96,11 +99,11 @@ void showOtpPopup(
               backgroundColor: Colors.transparent,
               isScrollControlled: true,
               builder: (context) => VerificationSuccessSheet(
-                titleKey: 'Verified Successfully',
-                descriptionKey: userId != null 
-                    ? 'Your mobile number has been changed successfully.'
-                    : 'Your OTP has been verified successfully.',
-                buttonTextKey: 'Close',
+                titleKey: languageService.getText('verifiedSuccessfully'),
+                descriptionKey: userId != null
+                    ? languageService.getText('mobileNumberChangedSuccessfully')
+                    : languageService.getText('otpVerifiedSuccessfully'),
+                buttonTextKey: languageService.getText('close'),
                 iconColor: AppColors.success,
                 iconBackgroundColor: AppColors.white,
                 buttonColor: AppColors.primary,
@@ -242,13 +245,14 @@ void showOtpPopup(
                               return SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton(
-                                  onPressed: (enabled && !verifying) ? onVerify : null,
+                                  onPressed:
+                                      (enabled && !verifying) ? onVerify : null,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: AppColors.primary,
                                     disabledBackgroundColor:
                                         AppColors.primary.withOpacity(0.4),
-                                    padding:
-                                        const EdgeInsets.symmetric(vertical: 16),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 16),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(30),
                                     ),
@@ -259,11 +263,14 @@ void showOtpPopup(
                                           width: 20,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2,
-                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                    Colors.white),
                                           ),
                                         )
                                       : Text(
-                                          languageService.getText("verifyPhoneNumber") ??
+                                          languageService.getText(
+                                                  "verifyPhoneNumber") ??
                                               "Verify Phone Number",
                                           style: AppFonts.mdBold(context,
                                               color: AppColors.white),

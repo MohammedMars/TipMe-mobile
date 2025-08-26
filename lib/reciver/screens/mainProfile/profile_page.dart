@@ -1,6 +1,7 @@
 // lib/auth/screens/profile/profile_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 import 'package:tipme_app/core/dio/client/dio_client.dart';
 import 'package:tipme_app/core/dio/service/api-service_path.dart';
 import 'package:tipme_app/core/storage/storage_service.dart';
@@ -12,6 +13,7 @@ import 'package:tipme_app/services/cacheService.dart';
 import 'package:tipme_app/utils/app_font.dart';
 import 'package:tipme_app/utils/colors.dart';
 import 'package:tipme_app/viewModels/tipReceiveerData.dart';
+import 'package:tipme_app/data/services/language_service.dart';
 
 class ProfilePage extends StatefulWidget {
   final String? backgroundSvgPath;
@@ -54,15 +56,15 @@ class _ProfilePageState extends State<ProfilePage> {
       });
 
       final response = await _tipReceiverService?.GetMe();
-      
+
       if (response != null && response.success) {
         setState(() {
           _userData = response.data;
         });
-        
+
         // Load city and country names from cache service
         await _loadLocationNames(_userData?.countryId, _userData?.cityId);
-        
+
         setState(() {
           _isLoading = false;
         });
@@ -106,6 +108,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final languageService = Provider.of<LanguageService>(context);
+
     return Scaffold(
       backgroundColor: AppColors.secondary,
       body: SafeArea(
@@ -173,8 +177,8 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Column(
                   children: [
                     CustomListCard(
-                      title: 'Account Info',
-                      subtitle: 'Update your account details',
+                      title: languageService.getText('accountInfo'),
+                      subtitle: languageService.getText('updateAccountDetails'),
                       iconPath: 'assets/icons/file-text.svg',
                       iconColor: AppColors.white,
                       iconBackgroundColor: AppColors.primary,
@@ -191,8 +195,8 @@ class _ProfilePageState extends State<ProfilePage> {
                       trailingType: TrailingType.arrow,
                     ),
                     CustomListCard(
-                      title: 'Login & Security',
-                      subtitle: 'Keep your account safe and secure',
+                      title: languageService.getText('loginSecurity'),
+                      subtitle: languageService.getText('keepAccountSafe'),
                       iconPath: 'assets/icons/shield-lock.svg',
                       iconColor: AppColors.white,
                       iconBackgroundColor: AppColors.primary,
@@ -209,8 +213,9 @@ class _ProfilePageState extends State<ProfilePage> {
                       trailingType: TrailingType.arrow,
                     ),
                     CustomListCard(
-                      title: 'Notification Preferences',
-                      subtitle: 'Customize your notification settings',
+                      title: languageService.getText('notificationPreferences'),
+                      subtitle: languageService
+                          .getText('customizeNotificationSettings'),
                       iconPath: 'assets/icons/bell-ringing.svg',
                       iconColor: AppColors.white,
                       iconBackgroundColor: AppColors.primary,
@@ -228,8 +233,9 @@ class _ProfilePageState extends State<ProfilePage> {
                       trailingType: TrailingType.arrow,
                     ),
                     CustomListCard(
-                      title: 'Help & Support',
-                      subtitle: 'Get assistance or report issues',
+                      title: languageService.getText('helpSupport'),
+                      subtitle:
+                          languageService.getText('getAssistanceReportIssues'),
                       iconPath: 'assets/icons/headphones.svg',
                       iconColor: AppColors.white,
                       iconBackgroundColor: AppColors.primary,
@@ -251,7 +257,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         _showSignOutDialog(context);
                       },
                       child: Text(
-                        'Sign Out',
+                        languageService.getText('signOut'),
                         style: AppFonts.mdSemiBold(
                           context,
                           color: Colors.red,
@@ -269,14 +275,16 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildUserInfo() {
+    final languageService = Provider.of<LanguageService>(context);
+
     if (_isLoading) {
-      return const Column(
+      return Column(
         children: [
-          CircularProgressIndicator(color: Colors.white),
-          SizedBox(height: 16),
+          const CircularProgressIndicator(color: Colors.white),
+          const SizedBox(height: 16),
           Text(
-            'Loading...',
-            style: TextStyle(color: Colors.white),
+            languageService.getText('loading'),
+            style: const TextStyle(color: Colors.white),
           ),
         ],
       );
@@ -300,7 +308,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Error loading profile',
+            languageService.getText('errorLoadingProfile'),
             style: AppFonts.xlBold(
               context,
               color: Colors.white,
@@ -328,29 +336,30 @@ class _ProfilePageState extends State<ProfilePage> {
             shape: BoxShape.circle,
           ),
           child: ClipOval(
-            child: _userData?.imagePath != null && _userData!.imagePath!.isNotEmpty
-                ? Image.network(
-                    "${ApiServicePath.fileServiceUrl}/${_userData!.imagePath}",
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
+            child:
+                _userData?.imagePath != null && _userData!.imagePath!.isNotEmpty
+                    ? Image.network(
+                        "${ApiServicePath.fileServiceUrl}/${_userData!.imagePath}",
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey[300],
+                            child: const Icon(
+                              Icons.person,
+                              size: 40,
+                              color: Colors.grey,
+                            ),
+                          );
+                        },
+                      )
+                    : Container(
                         color: Colors.grey[300],
                         child: const Icon(
                           Icons.person,
                           size: 40,
                           color: Colors.grey,
                         ),
-                      );
-                    },
-                  )
-                : Container(
-                    color: Colors.grey[300],
-                    child: const Icon(
-                      Icons.person,
-                      size: 40,
-                      color: Colors.grey,
-                    ),
-                  ),
+                      ),
           ),
         ),
         const SizedBox(height: 16),
@@ -364,7 +373,8 @@ class _ProfilePageState extends State<ProfilePage> {
         const SizedBox(height: 4),
         if (_cityName != null || _countryName != null)
           Text(
-            '${_cityName ?? ''}, ${_countryName ?? ''}'.replaceAll(RegExp(r'^, |, $'), ''),
+            '${_cityName ?? ''}, ${_countryName ?? ''}'
+                .replaceAll(RegExp(r'^, |, $'), ''),
             style: AppFonts.smMedium(
               context,
               color: Colors.white.withOpacity(0.9),
@@ -384,23 +394,26 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _showSignOutDialog(BuildContext context) {
+    final languageService =
+        Provider.of<LanguageService>(context, listen: false);
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text(
-            'Sign Out',
+            languageService.getText('signOut'),
             style: AppFonts.lgBold(context),
           ),
           content: Text(
-            'Are you sure you want to sign out?',
+            languageService.getText('confirmSignOut'),
             style: AppFonts.mdRegular(context),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
-                'Cancel',
+                languageService.getText('cancel'),
                 style: AppFonts.mdMedium(context, color: AppColors.text),
               ),
             ),
@@ -418,14 +431,14 @@ class _ProfilePageState extends State<ProfilePage> {
                 } catch (error) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Failed to sign out. Please try again.'),
+                      content: Text(languageService.getText('signOutFailed')),
                       backgroundColor: Colors.red,
                     ),
                   );
                 }
               },
               child: Text(
-                'Sign Out',
+                languageService.getText('signOut'),
                 style: AppFonts.mdMedium(context, color: Colors.red),
               ),
             ),

@@ -7,6 +7,7 @@ import 'package:tipme_app/di/gitIt.dart';
 import 'package:tipme_app/dtos/paymentInfoDto.dart';
 import 'package:tipme_app/models/country.dart';
 import 'package:tipme_app/reciver/widgets/custom_button.dart';
+import 'package:tipme_app/reciver/widgets/iban_help_bottom_sheet.dart';
 import 'package:tipme_app/routs/app_routs.dart';
 import 'package:tipme_app/services/CacheService.dart';
 import 'package:tipme_app/services/tipReceiverService.dart';
@@ -83,6 +84,9 @@ class _ChangeBankAccountDetailsPageState
   Future<void> _onSave() async {
     if (!_isFormValid || !_formKey.currentState!.validate()) return;
 
+    final languageService =
+        Provider.of<LanguageService>(context, listen: false);
+
     setState(() => _loading = true);
 
     try {
@@ -94,15 +98,20 @@ class _ChangeBankAccountDetailsPageState
       );
 
       final response = await _tipReceiverService.updatePaymentInfo(dto);
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Bank account updated successfully")),
+        SnackBar(
+            content: Text(
+                languageService.getText('bankAccountUpdatedSuccessfully'))),
       );
       Navigator.pushNamed(context, AppRoutes.walletScreen);
-      //Navigator.of(context).pop(response.data); // return updated info
     } catch (e) {
       if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to update bank account: $e")),
+        SnackBar(
+            content: Text(
+                '${languageService.getText('failedToUpdateBankAccount')}: $e')),
       );
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -248,6 +257,12 @@ class _ChangeBankAccountDetailsPageState
             keyboardType: TextInputType.text,
             validator: (value) => _validateIBAN(value, languageService),
             suffixIcon: GestureDetector(
+              onTap: () => HelpBottomSheet.show(
+                context,
+                titleKey: 'iban',
+                paragraphKeys: ['ibanDescription', 'ibanLocation'],
+                buttonTextKey: 'back',
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: SvgPicture.asset(

@@ -34,7 +34,7 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
   final TextEditingController _phoneController = TextEditingController();
 
   final tipReceiverService = sl<TipReceiverService>();
-  final authTipReceiverService =sl<AuthTipReceiverService>();
+  final authTipReceiverService = sl<AuthTipReceiverService>();
 
   bool _isLoading = true;
   bool _isUpdating = false;
@@ -95,8 +95,11 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
     } catch (e) {
       print('Error loading user data: $e');
       if (mounted) {
+        final languageService =
+            Provider.of<LanguageService>(context, listen: false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to load user data')),
+          SnackBar(
+              content: Text(languageService.getText('failedToLoadUserData'))),
         );
       }
     } finally {
@@ -135,16 +138,23 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
       });
 
       if (mounted) {
+        final languageService =
+            Provider.of<LanguageService>(context, listen: false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile updated successfully')),
+          SnackBar(
+              content:
+                  Text(languageService.getText('profileUpdatedSuccessfully'))),
         );
         await _loadUserData();
       }
     } catch (e) {
       print('Error updating profile: $e');
       if (mounted) {
+        final languageService =
+            Provider.of<LanguageService>(context, listen: false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to update profile')),
+          SnackBar(
+              content: Text(languageService.getText('failedToUpdateProfile'))),
         );
       }
     } finally {
@@ -165,6 +175,9 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
   }
 
   void _onChangeProfile() async {
+    final languageService =
+        Provider.of<LanguageService>(context, listen: false);
+
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.image,
@@ -177,8 +190,8 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
         if (file.size > 5 * 1024 * 1024) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Image size should be less than 5MB'),
+              SnackBar(
+                content: Text(languageService.getText('imageSizeTooLarge')),
                 backgroundColor: Colors.red,
               ),
             );
@@ -201,7 +214,8 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error selecting image: ${e.toString()}'),
+            content: Text(
+                '${languageService.getText('errorSelectingImage')}: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -210,12 +224,15 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
   }
 
   void _onDeleteProfile() {
+    final languageService =
+        Provider.of<LanguageService>(context, listen: false);
+
     SuccessBottomSheet.show(
       context,
-      titleKey: 'Delete Profile Picture!',
-      descriptionKey: 'Are you sure you want to delete this profile picture?',
-      primaryButtonTextKey: 'Yes, Delete',
-      secondaryButtonTextKey: 'No, Cancel',
+      title: languageService.getText('deleteProfilePicture'),
+      description: languageService.getText('deleteProfilePictureConfirmation'),
+      primaryButtonText: languageService.getText('yesDelete'),
+      secondaryButtonText: languageService.getText('noCancel'),
       icon: Icons.delete_outline,
       iconColor: AppColors.danger_500,
       iconBackgroundColor: AppColors.white,
@@ -261,7 +278,8 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
       if (isSameCountry && isSamePhone && isPhoneNotEmpty) {
         _isPhoneVerified = true;
       } else if (!isSameCountry || !isSamePhone) {
-        if (_isPhoneVerified && (_originalCountryCode != null && _originalPhoneNumber != null)) {
+        if (_isPhoneVerified &&
+            (_originalCountryCode != null && _originalPhoneNumber != null)) {
           _isPhoneVerified = false;
         }
       }
@@ -287,7 +305,7 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
           children: [
             CustomTopBar.withTitle(
               title: Text(
-                'Account Info',
+                languageService.getText('accountInfo'),
                 style: AppFonts.lgBold(context, color: AppColors.white),
               ),
               leading: GestureDetector(
@@ -324,7 +342,7 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
                   padding: const EdgeInsets.fromLTRB(16, 32, 16, 32),
                   child: Column(
                     children: [
-                      _buildProfileSection(),
+                      _buildProfileSection(languageService),
                       const SizedBox(height: 32),
                       Row(
                         children: [
@@ -333,13 +351,14 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'First Name',
+                                  languageService.getText('firstName'),
                                   style: AppFonts.mdSemiBold(context,
                                       color: AppColors.black),
                                 ),
                                 const SizedBox(height: 8),
                                 CustomTextField(
-                                  hintText: 'First Name',
+                                  hintText:
+                                      languageService.getText('firstName'),
                                   controller: _firstNameController,
                                 ),
                               ],
@@ -351,13 +370,13 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Surname',
+                                  languageService.getText('surname'),
                                   style: AppFonts.mdSemiBold(context,
                                       color: AppColors.black),
                                 ),
                                 const SizedBox(height: 8),
                                 CustomTextField(
-                                  hintText: 'Surname',
+                                  hintText: languageService.getText('surname'),
                                   controller: _surnameController,
                                 ),
                               ],
@@ -370,7 +389,7 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Phone Number',
+                            languageService.getText('phoneNumber'),
                             style: AppFonts.smMedium(context,
                                 color: AppColors.text),
                           ),
@@ -392,7 +411,7 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
                       ),
                       const Spacer(),
                       CustomButton(
-                        text: 'Update',
+                        text: languageService.getText('update'),
                         onPressed: _onUpdatePressed,
                         showArrow: true,
                         isLoading: _isUpdating,
@@ -409,7 +428,7 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
     );
   }
 
-  Widget _buildProfileSection() {
+  Widget _buildProfileSection(LanguageService languageService) {
     return Column(
       children: [
         Center(
@@ -487,7 +506,7 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             ActionButton(
-              text: 'Change',
+              text: languageService.getText('change'),
               backgroundColor: AppColors.secondary_500.withOpacity(0.1),
               textColor: AppColors.secondary_500,
               svgIcon: 'assets/icons/pencil.svg',
@@ -496,7 +515,7 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
             if (_hasProfileImage) ...[
               const SizedBox(width: 12),
               ActionButton(
-                text: 'Delete',
+                text: languageService.getText('delete'),
                 backgroundColor: AppColors.danger_500.withOpacity(0.1),
                 textColor: AppColors.danger_500,
                 svgIcon: 'assets/icons/trash.svg',

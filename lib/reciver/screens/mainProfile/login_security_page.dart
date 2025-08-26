@@ -52,8 +52,12 @@ class _LoginSecurityPageState extends State<LoginSecurityPage> {
       });
     } catch (e) {
       if (mounted) {
+        final languageService =
+            Provider.of<LanguageService>(context, listen: false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load settings: $e')),
+          SnackBar(
+              content: Text(
+                  '${languageService.getText('failedToLoadSettings')}: $e')),
         );
       }
     } finally {
@@ -74,8 +78,12 @@ class _LoginSecurityPageState extends State<LoginSecurityPage> {
       await _settingsService.updateSettings(_settings);
     } catch (e) {
       if (mounted) {
+        final languageService =
+            Provider.of<LanguageService>(context, listen: false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save settings: $e')),
+          SnackBar(
+              content: Text(
+                  '${languageService.getText('failedToSaveSettings')}: $e')),
         );
       }
     } finally {
@@ -98,7 +106,7 @@ class _LoginSecurityPageState extends State<LoginSecurityPage> {
           children: [
             CustomTopBar.withTitle(
               title: Text(
-                'Login & Security',
+                languageService.getText('loginSecurity'),
                 style: AppFonts.lgBold(context, color: AppColors.white),
               ),
               leading: GestureDetector(
@@ -138,7 +146,8 @@ class _LoginSecurityPageState extends State<LoginSecurityPage> {
                       : Column(
                           children: [
                             SwitchCard(
-                              text: 'Face ID/Bio-metric Login',
+                              text: languageService
+                                  .getText('faceIdBiometricLogin'),
                               value: _settings.enableBiometricLogin,
                               onChanged: (value) async {
                                 setState(() {

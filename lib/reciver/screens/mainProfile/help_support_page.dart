@@ -23,7 +23,7 @@ class HelpSupportPage extends StatelessWidget {
           children: [
             CustomTopBar.withTitle(
               title: Text(
-                'Help & Support',
+                languageService.getText('helpAndSupport'),
                 style: AppFonts.lgBold(context, color: AppColors.white),
               ),
               leading: GestureDetector(
@@ -59,8 +59,8 @@ class HelpSupportPage extends StatelessWidget {
                 child: Column(
                   children: [
                     CustomListCard(
-                      title: 'Contact Support',
-                      subtitle: 'Reach out for help or questions.',
+                      title: languageService.getText('contactSupport'),
+                      subtitle: languageService.getText('reachOutForHelp'),
                       iconPath: 'assets/icons/headphones.svg',
                       iconColor: AppColors.secondary_500,
                       onTap: () {
@@ -75,8 +75,8 @@ class HelpSupportPage extends StatelessWidget {
                       trailingType: TrailingType.arrow,
                     ),
                     CustomListCard(
-                      title: 'Repot a Problem',
-                      subtitle: 'Let us know about any issues.',
+                      title: languageService.getText('reportAProblem'),
+                      subtitle: languageService.getText('letUsKnowIssues'),
                       iconPath: 'assets/icons/exclamation-circle.svg',
                       iconColor: AppColors.secondary_500,
                       onTap: () {
@@ -91,8 +91,8 @@ class HelpSupportPage extends StatelessWidget {
                       trailingType: TrailingType.arrow,
                     ),
                     CustomListCard(
-                      title: 'FAQ',
-                      subtitle: 'Find quick answers to common questions.',
+                      title: languageService.getText('faq'),
+                      subtitle: languageService.getText('findQuickAnswers'),
                       iconPath: 'assets/icons/progress-help.svg',
                       iconColor: AppColors.secondary_500,
                       onTap: () {
@@ -107,8 +107,8 @@ class HelpSupportPage extends StatelessWidget {
                       trailingType: TrailingType.arrow,
                     ),
                     CustomListCard(
-                      title: 'Terms and Condition',
-                      subtitle: 'Read the rules for using our service.',
+                      title: languageService.getText('termsAndConditions'),
+                      subtitle: languageService.getText('readTheRules'),
                       iconPath: 'assets/icons/file-text.svg',
                       iconColor: AppColors.secondary_500,
                       onTap: () {
@@ -123,8 +123,8 @@ class HelpSupportPage extends StatelessWidget {
                       trailingType: TrailingType.arrow,
                     ),
                     CustomListCard(
-                      title: 'Privacy Policy',
-                      subtitle: 'See how we handle your data.',
+                      title: languageService.getText('privacyPolicy'),
+                      subtitle: languageService.getText('seeHowWeHandleData'),
                       iconPath: 'assets/icons/file-text-shield.svg',
                       iconColor: AppColors.secondary_500,
                       onTap: () {

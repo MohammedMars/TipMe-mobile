@@ -6,11 +6,15 @@ import 'package:tipme_app/utils/colors.dart';
 class ExpandableFAQCard extends StatefulWidget {
   final String question;
   final String answer;
+  final TextStyle? questionStyle;
+  final TextStyle? answerStyle;
 
   const ExpandableFAQCard({
     Key? key,
     required this.question,
     required this.answer,
+    this.questionStyle,
+    this.answerStyle,
   }) : super(key: key);
 
   @override
@@ -55,6 +59,13 @@ class _ExpandableFAQCardState extends State<ExpandableFAQCard>
 
   @override
   Widget build(BuildContext context) {
+    // Use provided styles or fall back to default AppFonts styles
+    final questionStyle = widget.questionStyle ??
+        AppFonts.mdBold(context, color: AppColors.black);
+
+    final answerStyle =
+        widget.answerStyle ?? AppFonts.smMedium(context, color: AppColors.text);
+
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFE9ECEF),
@@ -72,7 +83,7 @@ class _ExpandableFAQCardState extends State<ExpandableFAQCard>
                   Expanded(
                     child: Text(
                       widget.question,
-                      style: AppFonts.mdBold(context, color: AppColors.black),
+                      style: questionStyle, // Use the resolved style
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -100,10 +111,7 @@ class _ExpandableFAQCardState extends State<ExpandableFAQCard>
               ),
               child: Text(
                 widget.answer,
-                style: AppFonts.smMedium(
-                  context,
-                  color: AppColors.text,
-                ),
+                style: answerStyle, // Use the resolved style
               ),
             ),
           ),
