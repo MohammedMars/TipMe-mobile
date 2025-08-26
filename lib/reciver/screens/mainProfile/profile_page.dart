@@ -1,4 +1,5 @@
-// lib/auth/screens/profile/profile_page.dart
+// lib/reciver/screens/mainProfile/profile_page.dart
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -35,6 +36,7 @@ class _ProfilePageState extends State<ProfilePage> {
   CacheService? _cacheService;
   String? _cityName;
   String? _countryName;
+  Uint8List? _profileImageBytes;
 
   @override
   void initState() {
@@ -48,8 +50,30 @@ class _ProfilePageState extends State<ProfilePage> {
     _cacheService = CacheService(sl<DioClient>(instanceName: 'CacheService'));
   }
 
+  Future<void> _loadProfileImage() async {
+    print('Loading profile image...');
+    print('Image path: ${_userData!.imagePath}');
+    if (_userData?.imagePath != null && _userData!.imagePath!.isNotEmpty) {
+      try {
+        print('Image path: ${_userData!.imagePath}');
+        final imageBytes = await _tipReceiverService
+            ?.getProfileImageAsFile(_userData!.imagePath);
+        if (imageBytes != null && mounted) {
+          setState(() {
+            print('Profile image loaded successfully');
+            if (!mounted) return;
+            _profileImageBytes = imageBytes;
+          });
+        }
+      } catch (e) {
+        print('Error loading profile image: $e');
+      }
+    }
+  }
+
   Future<void> _loadUserData() async {
     try {
+      if (!mounted) return;
       setState(() {
         _isLoading = true;
         _errorMessage = null;
@@ -58,23 +82,28 @@ class _ProfilePageState extends State<ProfilePage> {
       final response = await _tipReceiverService?.GetMe();
 
       if (response != null && response.success) {
+        if (!mounted) return;
         setState(() {
           _userData = response.data;
         });
 
         // Load city and country names from cache service
         await _loadLocationNames(_userData?.countryId, _userData?.cityId);
+        await _loadProfileImage();
 
+        if (!mounted) return;
         setState(() {
           _isLoading = false;
         });
       } else {
+        if (!mounted) return;
         setState(() {
           _errorMessage = response?.message ?? 'Failed to load user data';
           _isLoading = false;
         });
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = 'Error loading user data: $e';
         _isLoading = false;
@@ -85,20 +114,20 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _loadLocationNames(String? countryId, String? cityId) async {
     try {
       if (countryId != null && _cacheService != null) {
-        final countries = await _cacheService!.getCountries();
+        final countries = [];
         final country = countries.firstWhere(
           (c) => c.id == countryId,
           orElse: () => throw Exception("Country not found"),
         );
-        _countryName = country.name;
+        _countryName = "Jordan";
 
         if (cityId != null) {
-          final cities = await _cacheService!.getCities(countryId);
+          final cities = [];
           final city = cities.firstWhere(
             (c) => c.id == cityId,
             orElse: () => throw Exception("City not found"),
           );
-          _cityName = city.name;
+          _cityName = "Amman";
         }
       }
     } catch (e) {
@@ -336,30 +365,29 @@ class _ProfilePageState extends State<ProfilePage> {
             shape: BoxShape.circle,
           ),
           child: ClipOval(
-            child:
-                _userData?.imagePath != null && _userData!.imagePath!.isNotEmpty
-                    ? Image.network(
-                        "${ApiServicePath.fileServiceUrl}/${_userData!.imagePath}",
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: Colors.grey[300],
-                            child: const Icon(
-                              Icons.person,
-                              size: 40,
-                              color: Colors.grey,
-                            ),
-                          );
-                        },
-                      )
-                    : Container(
+            child: _profileImageBytes != null
+                ? Image.memory(
+                    _profileImageBytes!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
                         color: Colors.grey[300],
                         child: const Icon(
                           Icons.person,
                           size: 40,
                           color: Colors.grey,
                         ),
-                      ),
+                      );
+                    },
+                  )
+                : Container(
+                    color: Colors.grey[300],
+                    child: const Icon(
+                      Icons.person,
+                      size: 40,
+                      color: Colors.grey,
+                    ),
+                  ),
           ),
         ),
         const SizedBox(height: 16),

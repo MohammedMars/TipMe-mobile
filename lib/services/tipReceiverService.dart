@@ -1,4 +1,5 @@
 //lib\services\tipReceiverService.dart
+import 'dart:typed_data';
 import 'package:tipme_app/core/dio/client/dio_client.dart';
 import 'package:tipme_app/core/storage/storage_service.dart';
 import 'package:tipme_app/dtos/paymentInfoDto.dart';
@@ -105,6 +106,31 @@ class TipReceiverService {
       if (userId != null) {
         cacheService!.clearUserDataCache(userId);
       }
+    }
+  }
+
+  /// Gets profile image as file bytes from the server
+  /// Returns null if imagePath is null/empty or if request fails
+  Future<Uint8List?> getProfileImageAsFile(String? imagePath) async {
+    if (imagePath == null || imagePath.isEmpty) {
+      return null;
+    }
+
+    try {
+      final response = await dioClient.get(
+        'File/$imagePath',
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer ${await StorageService.get("user_token")}',
+          },
+          responseType: ResponseType.bytes,
+        ),
+      );
+
+      return Uint8List.fromList(response.data);
+    } catch (e) {
+      print('Error fetching profile image: $e');
+      return null;
     }
   }
 }
