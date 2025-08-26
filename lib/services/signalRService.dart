@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 import 'package:signalr_netcore/signalr_client.dart';
+import 'package:tipme_app/core/dio/service/api-service_path.dart';
 import 'package:tipme_app/core/storage/storage_service.dart';
 import 'package:tipme_app/viewModels/notificationDataModel.dart';
 
@@ -30,7 +31,7 @@ class SignalRService {
         log('SignalR: No token or user ID found');
         return;
       }
-      final hubUrl = "http://localhost:5000/notificationHub?userId=$userId";
+      final hubUrl = "${ApiServicePath.notificationHubUrl}?userId=$userId";
       _hubConnection = HubConnectionBuilder()
           .withUrl(hubUrl)
           .withAutomaticReconnect()

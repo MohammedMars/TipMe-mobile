@@ -1,8 +1,13 @@
 //lib\core\dio\service\api-service_path.dart
+import 'package:tipme_app/core/config/app_config.dart';
+
+
 class ApiServicePath {
-  static const fileServiceUrl = "http://localhost:5000/uploads";
-  static const baseUrl = "http://localhost:5000/api";
-  static const version = "v1"; // DONT CHANGE
+  static String get serverUrl => AppConfig.serverUrl;
+  static String get fileServiceUrl => AppConfig.fileServiceUrl;
+  static String get baseUrl => AppConfig.baseUrl;
+  static String get notificationHubUrl => AppConfig.notificationHubUrl;
+  static const version = "v1";
   static get authTipReceiverPath => "${baseUrl}/${version}/AuthTipReceiver/";
   static get cacheServicePath => "${baseUrl}/${version}/Lookups/";
   static get tipReceiverPath => "${baseUrl}/${version}/TipReceiver/";
