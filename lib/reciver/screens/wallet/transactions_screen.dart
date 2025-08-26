@@ -265,7 +265,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                             child: Center(
                               child: GestureDetector(
                                 onTap: () async {
-                                  await ExcelExportService.exportTransactionsToExcel(
+                                  await ExcelExportService
+                                      .exportTransactionsToExcel(
                                     _filteredTransactions,
                                     _currency,
                                   );
@@ -328,8 +329,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                           : _errorMessage != null
                               ? Center(child: Text(_errorMessage!))
                               : _filteredTransactions.isEmpty
-                                  ? const Center(
-                                      child: Text('No transactions found'))
+                                  ? Center(
+                                      child: Text(languageService
+                                          .getText('noTransactionsFound')))
                                   : NotificationListener<ScrollNotification>(
                                       onNotification:
                                           (ScrollNotification scrollInfo) {

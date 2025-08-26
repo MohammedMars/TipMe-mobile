@@ -31,8 +31,8 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
   @override
   void initState() {
     super.initState();
-    _supportIssueService =
-        SupportIssueService(GetIt.instance<DioClient>(instanceName: 'SupportIssue'));
+    _supportIssueService = SupportIssueService(
+        GetIt.instance<DioClient>(instanceName: 'SupportIssue'));
   }
 
   @override
@@ -42,12 +42,15 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
   }
 
   void _submitTicket() async {
+    final languageService =
+        Provider.of<LanguageService>(context, listen: false);
+
     // Validate input
     if (_problemController.text.trim().isEmpty) {
       // Show error message if description is empty
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please describe the problem'),
+        SnackBar(
+          content: Text(languageService.getText('pleaseDescribeProblem')),
           backgroundColor: Colors.red,
         ),
       );
@@ -61,7 +64,7 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
     try {
       final userId = await StorageService.get('user_id');
       if (userId == null) {
-        throw Exception('User not logged in');
+        throw Exception(languageService.getText('userNotLoggedIn'));
       }
 
       final dto = CreateSupportIssueDto(
@@ -75,11 +78,10 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
       if (response != null && response.success) {
         SuccessBottomSheet.show(
           context,
-          titleKey: 'Submit Successfully',
-          descriptionKey:
-              'Thank you for reporting the issue! Our team will review it and get back to you soon.',
-          primaryButtonTextKey: 'Report New Issue',
-          secondaryButtonTextKey: 'Close',
+          title: languageService.getText('submitSuccessfully'),
+          description: languageService.getText('thankYouReportingIssue'),
+          primaryButtonText: languageService.getText('reportNewIssue'),
+          secondaryButtonText: languageService.getText('close'),
           icon: Icons.check,
           iconColor: AppColors.success,
           iconBackgroundColor: AppColors.white,
@@ -100,7 +102,7 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
           },
         );
       } else {
-        throw Exception('Failed to create support issue');
+        throw Exception(languageService.getText('failedToCreateSupportIssue'));
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -127,7 +129,7 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
           children: [
             CustomTopBar.withTitle(
               title: Text(
-                'Report a Problem',
+                languageService.getText('reportProblem'),
                 style: AppFonts.lgBold(context, color: AppColors.white),
               ),
               leading: GestureDetector(
@@ -170,23 +172,26 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               CustomListCard(
-                                title: 'Payment',
-                                subtitle:
-                                    'Issues with charges, refunds, or payments.',
-                                iconPath: 'assets/icons/cach.svg',
+                                title: languageService.getText('payment'),
+                                subtitle: languageService
+                                    .getText('paymentIssuesDescription'),
+                                iconPath: 'assets/icons/cash.svg',
                                 iconColor: AppColors.secondary_500,
                                 iconBackgroundColor:
                                     AppColors.secondary_500.withOpacity(0.1),
                                 borderType: CardBorderType.all,
                                 borderRadius: 16.0,
-                                borderColor: selectedProblem == SupportIssueType.Payment
-                                    ? AppColors.primary
-                                    : AppColors.border_2,
-                                backgroundColor: selectedProblem == SupportIssueType.Payment
-                                    ? AppColors.primary.withOpacity(0.1)
-                                    : Colors.transparent,
+                                borderColor:
+                                    selectedProblem == SupportIssueType.Payment
+                                        ? AppColors.primary
+                                        : AppColors.border_2,
+                                backgroundColor:
+                                    selectedProblem == SupportIssueType.Payment
+                                        ? AppColors.primary.withOpacity(0.1)
+                                        : Colors.transparent,
                                 trailingType: TrailingType.radio,
-                                isSelected: selectedProblem == SupportIssueType.Payment,
+                                isSelected:
+                                    selectedProblem == SupportIssueType.Payment,
                                 onTap: () {
                                   setState(() {
                                     selectedProblem = SupportIssueType.Payment;
@@ -196,50 +201,56 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
                               ),
                               const SizedBox(height: 16),
                               CustomListCard(
-                                title: 'Bank Account',
-                                subtitle:
-                                    'Problems related to your bank accounts.',
-                                iconPath: 'assets/icons/calender-time.svg',
+                                title: languageService.getText('bankAccount'),
+                                subtitle: languageService
+                                    .getText('bankAccountIssuesDescription'),
+                                iconPath: 'assets/icons/calendar-time.svg',
                                 iconColor: AppColors.secondary_500,
                                 iconBackgroundColor:
                                     AppColors.secondary_500.withOpacity(0.1),
                                 borderType: CardBorderType.all,
                                 borderRadius: 16.0,
-                                borderColor: selectedProblem == SupportIssueType.BankAccount
+                                borderColor: selectedProblem ==
+                                        SupportIssueType.BankAccount
                                     ? AppColors.primary
                                     : AppColors.border_2,
-                                backgroundColor:
-                                    selectedProblem == SupportIssueType.BankAccount
-                                        ? AppColors.primary.withOpacity(0.1)
-                                        : Colors.transparent,
+                                backgroundColor: selectedProblem ==
+                                        SupportIssueType.BankAccount
+                                    ? AppColors.primary.withOpacity(0.1)
+                                    : Colors.transparent,
                                 trailingType: TrailingType.radio,
-                                isSelected: selectedProblem == SupportIssueType.BankAccount,
+                                isSelected: selectedProblem ==
+                                    SupportIssueType.BankAccount,
                                 onTap: () {
                                   setState(() {
-                                    selectedProblem = SupportIssueType.BankAccount;
+                                    selectedProblem =
+                                        SupportIssueType.BankAccount;
                                   });
                                 },
                                 padding: const EdgeInsets.all(16),
                               ),
                               const SizedBox(height: 16),
                               CustomListCard(
-                                title: 'My Account',
-                                subtitle:
-                                    'Login, profile, or account-related concerns.',
+                                title: languageService.getText('myAccount'),
+                                subtitle: languageService
+                                    .getText('myAccountIssuesDescription'),
                                 iconPath: 'assets/icons/user.svg',
                                 iconColor: AppColors.secondary_500,
                                 iconBackgroundColor:
                                     AppColors.secondary_500.withOpacity(0.1),
                                 borderType: CardBorderType.all,
                                 borderRadius: 16.0,
-                                borderColor: selectedProblem == SupportIssueType.Account
-                                    ? AppColors.primary
-                                    : AppColors.border_2,
-                                backgroundColor: selectedProblem == SupportIssueType.Account
-                                    ? AppColors.primary.withOpacity(0.1)
-                                    : Colors.transparent,
+                                borderColor:
+                                    selectedProblem == SupportIssueType.Account
+                                        ? AppColors.primary
+                                        : AppColors.border_2,
+                                backgroundColor:
+                                    selectedProblem == SupportIssueType.Account
+                                        ? AppColors.primary.withOpacity(0.1)
+                                        : Colors.transparent,
                                 trailingType: TrailingType.radio,
-                                isSelected: selectedProblem == SupportIssueType.Account,
+                                isSelected:
+                                    selectedProblem == SupportIssueType.Account,
                                 onTap: () {
                                   setState(() {
                                     selectedProblem = SupportIssueType.Account;
@@ -249,22 +260,26 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
                               ),
                               const SizedBox(height: 16),
                               CustomListCard(
-                                title: 'QR Code',
-                                subtitle: 'Problems related to your QR Code.',
+                                title: languageService.getText('qrCode'),
+                                subtitle: languageService
+                                    .getText('qrCodeIssuesDescription'),
                                 iconPath: 'assets/icons/steering-wheel.svg',
                                 iconColor: AppColors.secondary_500,
                                 iconBackgroundColor:
                                     AppColors.secondary_500.withOpacity(0.1),
                                 borderType: CardBorderType.all,
                                 borderRadius: 16.0,
-                                borderColor: selectedProblem == SupportIssueType.QRCode
-                                    ? AppColors.primary
-                                    : AppColors.border_2,
-                                backgroundColor: selectedProblem == SupportIssueType.QRCode
-                                    ? AppColors.primary.withOpacity(0.1)
-                                    : Colors.transparent,
+                                borderColor:
+                                    selectedProblem == SupportIssueType.QRCode
+                                        ? AppColors.primary
+                                        : AppColors.border_2,
+                                backgroundColor:
+                                    selectedProblem == SupportIssueType.QRCode
+                                        ? AppColors.primary.withOpacity(0.1)
+                                        : Colors.transparent,
                                 trailingType: TrailingType.radio,
-                                isSelected: selectedProblem == SupportIssueType.QRCode,
+                                isSelected:
+                                    selectedProblem == SupportIssueType.QRCode,
                                 onTap: () {
                                   setState(() {
                                     selectedProblem = SupportIssueType.QRCode;
@@ -274,23 +289,26 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
                               ),
                               const SizedBox(height: 16),
                               CustomListCard(
-                                title: 'Report a Bug',
-                                subtitle:
-                                    'Found a technical issue or glitch? Tell us here.',
+                                title: languageService.getText('reportBug'),
+                                subtitle: languageService
+                                    .getText('reportBugDescription'),
                                 iconPath: 'assets/icons/bug.svg',
                                 iconColor: AppColors.secondary_500,
                                 iconBackgroundColor:
                                     AppColors.secondary_500.withOpacity(0.1),
                                 borderType: CardBorderType.all,
                                 borderRadius: 16.0,
-                                borderColor: selectedProblem == SupportIssueType.Bug
-                                    ? AppColors.primary
-                                    : AppColors.border_2,
-                                backgroundColor: selectedProblem == SupportIssueType.Bug
-                                    ? AppColors.primary.withOpacity(0.1)
-                                    : Colors.transparent,
+                                borderColor:
+                                    selectedProblem == SupportIssueType.Bug
+                                        ? AppColors.primary
+                                        : AppColors.border_2,
+                                backgroundColor:
+                                    selectedProblem == SupportIssueType.Bug
+                                        ? AppColors.primary.withOpacity(0.1)
+                                        : Colors.transparent,
                                 trailingType: TrailingType.radio,
-                                isSelected: selectedProblem == SupportIssueType.Bug,
+                                isSelected:
+                                    selectedProblem == SupportIssueType.Bug,
                                 onTap: () {
                                   setState(() {
                                     selectedProblem = SupportIssueType.Bug;
@@ -300,7 +318,7 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
                               ),
                               const SizedBox(height: 32),
                               Text(
-                                'Please Explain the Problem',
+                                languageService.getText('pleaseExplainProblem'),
                                 style: AppFonts.mdBold(context,
                                     color: AppColors.black),
                               ),
@@ -318,7 +336,7 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
                                   controller: _problemController,
                                   maxLines: 6,
                                   decoration: InputDecoration(
-                                    hintText: 'Enter',
+                                    hintText: languageService.getText('enter'),
                                     hintStyle: AppFonts.mdRegular(
                                       context,
                                       color: const Color(0xFFADB5BD),
@@ -336,7 +354,7 @@ class _ReportProblemPageState extends State<ReportProblemPage> {
                       ),
                       const SizedBox(height: 14),
                       CustomButton(
-                        text: 'Submit Ticket',
+                        text: languageService.getText('submitTicket'),
                         onPressed: _submitTicket,
                         showArrow: true,
                         isLoading: _isLoading,

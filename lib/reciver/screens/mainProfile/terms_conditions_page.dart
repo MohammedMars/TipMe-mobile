@@ -16,51 +16,44 @@ class TermsConditionsPage extends StatelessWidget {
 
     final List<Map<String, dynamic>> termsData = [
       {
-        'title': 'Use of Service',
-        'description':
-            'You agree to use the service only for lawful purposes and in accordance with these terms. You are responsible for any activity that occurs under your account.',
+        'title': languageService.getText('useOfService'),
+        'description': languageService.getText('useOfServiceDesc'),
         'isNumbered': true,
         'number': 1,
       },
       {
-        'title': 'Account Registration',
-        'description':
-            'To access certain features, you may need to create an account. You are responsible for keeping your login information secure and notifying us immediately of any unauthorized use.',
+        'title': languageService.getText('accountRegistration'),
+        'description': languageService.getText('accountRegistrationDesc'),
         'isNumbered': true,
         'number': 2,
       },
       {
-        'title': 'Intellectual Property',
-        'description':
-            'All content, including logos, images, text, and software, is owned by [Your Company Name] and protected by copyright and other laws.',
+        'title': languageService.getText('intellectualProperty'),
+        'description': languageService.getText('intellectualPropertyDesc'),
         'isNumbered': true,
         'number': 3,
       },
       {
-        'title': 'Prohibited Activities',
-        'description':
-            'You may not use the service for any unlawful purpose or in a way that could harm, disable, or interfere with the site or its users.',
+        'title': languageService.getText('prohibitedActivities'),
+        'description': languageService.getText('prohibitedActivitiesDesc'),
         'isNumbered': true,
         'number': 4,
       },
       {
-        'title': 'Termination',
-        'description':
-            'We may suspend or terminate your access to the service at any time for violations of these terms.',
+        'title': languageService.getText('termination'),
+        'description': languageService.getText('terminationDesc'),
         'isNumbered': true,
         'number': 5,
       },
       {
-        'title': 'Changes to Terms',
-        'description':
-            'We may update these terms from time to time. Any changes will be posted on this page with the updated date.',
+        'title': languageService.getText('changesToTerms'),
+        'description': languageService.getText('changesToTermsDesc'),
         'isNumbered': true,
         'number': 6,
       },
       {
-        'title': 'Contact Us',
-        'description':
-            'If you have any questions about these Terms and Conditions, please contact us at support@tipme.com.',
+        'title': languageService.getText('contactUs'),
+        'description': languageService.getText('contactUsDesc'),
         'isNumbered': true,
         'number': 7,
       },
@@ -73,7 +66,7 @@ class TermsConditionsPage extends StatelessWidget {
           children: [
             CustomTopBar.withTitle(
               title: Text(
-                'Terms and Condition',
+                languageService.getText('termsAndConditions'),
                 style: AppFonts.lgBold(context, color: AppColors.white),
               ),
               leading: GestureDetector(
@@ -118,13 +111,14 @@ class TermsConditionsPage extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Last Updated: 8 March, 2025',
+                              languageService.getText('lastUpdated'),
                               style: AppFonts.mdBold(context,
                                   color: AppColors.black),
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              'Welcome to TipMe! By using our platform to receive or manage tips, you agree to our terms and conditions. Please review them carefully before proceeding.',
+                              languageService
+                                  .getText('welcomeToTipMeTerms&Condition'),
                               style: AppFonts.smRegular(
                                 context,
                                 color: AppColors.text,

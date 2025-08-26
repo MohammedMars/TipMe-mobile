@@ -1,3 +1,4 @@
+//lib\reciver\widgets\mainProfile_widgets\contact_support_bottom.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get_it/get_it.dart';
@@ -11,6 +12,8 @@ import 'package:tipme_app/viewModels/contactSupportData.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:tipme_app/utils/app_font.dart';
 import 'package:tipme_app/utils/colors.dart';
+import 'package:provider/provider.dart';
+import 'package:tipme_app/data/services/language_service.dart';
 
 class ContactSupportBottomSheet extends StatefulWidget {
   const ContactSupportBottomSheet({Key? key}) : super(key: key);
@@ -43,6 +46,8 @@ class _ContactSupportBottomSheetState extends State<ContactSupportBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final languageService = Provider.of<LanguageService>(context);
+
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.white,
@@ -77,9 +82,11 @@ class _ContactSupportBottomSheetState extends State<ContactSupportBottomSheet> {
               if (snapshot.hasError ||
                   !snapshot.hasData ||
                   !snapshot.data!.success) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 40.0),
-                  child: Center(child: Text('Could not load contact info')),
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 40.0),
+                  child: Center(
+                      child: Text(
+                          languageService.getText('couldNotLoadContactInfo'))),
                 );
               }
 
@@ -88,8 +95,8 @@ class _ContactSupportBottomSheetState extends State<ContactSupportBottomSheet> {
               return Column(
                 children: [
                   _ContactCard(
-                    title: 'WhatsApp Us',
-                    subtitle: 'Reach us anytime for support.',
+                    title: languageService.getText('whatsAppUs'),
+                    subtitle: languageService.getText('reachUsAnytime'),
                     backgroundColor: const Color(0xFF25D366),
                     iconPath: 'assets/icons/brand-whatsapp.svg',
                     onTap: () => _launchWhatsApp(contactData.whatsAppNumber),
@@ -97,7 +104,7 @@ class _ContactSupportBottomSheetState extends State<ContactSupportBottomSheet> {
                   const SizedBox(height: 16),
                   _ContactCard(
                     title: contactData.phoneNumber,
-                    subtitle: 'For quick help, give us a call.',
+                    subtitle: languageService.getText('forQuickHelpCall'),
                     backgroundColor: const Color(0xFF007AFF),
                     iconPath: 'assets/icons/phone-call.svg',
                     onTap: () => _makePhoneCall(contactData.phoneNumber),
@@ -113,7 +120,8 @@ class _ContactSupportBottomSheetState extends State<ContactSupportBottomSheet> {
   }
 
   static Future<void> _launchWhatsApp(String phoneNumber) async {
-    const message = 'Hello, I need support with TipMe app.';
+    final languageService = GetIt.instance<LanguageService>();
+    final message = languageService.getText('whatsAppSupportMessage');
     final uri = Uri.parse(
         'https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}');
 
@@ -218,9 +226,11 @@ class _ContactCard extends StatelessWidget {
 
 extension HelpSupportPageExtension on HelpSupportPage {
   static Widget buildUpdatedContactSupportCard(BuildContext context) {
+    final languageService = Provider.of<LanguageService>(context);
+
     return CustomListCard(
-      title: 'Contact Support',
-      subtitle: 'Reach out for help or questions.',
+      title: languageService.getText('contactSupport'),
+      subtitle: languageService.getText('reachOutForHelp'),
       iconPath: 'assets/icons/headphones.svg',
       iconColor: AppColors.secondary_500,
       onTap: () {

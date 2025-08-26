@@ -480,6 +480,8 @@ class _CustomPhoneInputState extends State<CustomPhoneInput> {
   }
 
   Widget _buildVerifyButton() {
+    final languageService = Provider.of<LanguageService>(context);
+
     return GestureDetector(
       onTap: _onVerifyPressed,
       child: Container(
@@ -489,7 +491,7 @@ class _CustomPhoneInputState extends State<CustomPhoneInput> {
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
-          'Verify',
+          languageService.getText('verify'),
           style: AppFonts.smSemiBold(context, color: Colors.white),
         ),
       ),
@@ -497,6 +499,8 @@ class _CustomPhoneInputState extends State<CustomPhoneInput> {
   }
 
   Widget _buildVerifiedStatus() {
+    final languageService = Provider.of<LanguageService>(context);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -518,7 +522,7 @@ class _CustomPhoneInputState extends State<CustomPhoneInput> {
           ),
           const SizedBox(width: 1.5),
           Text(
-            'Verified',
+            languageService.getText('verified'),
             style: AppFonts.smSemiBold(context, color: Colors.green),
           ),
         ],
@@ -529,11 +533,16 @@ class _CustomPhoneInputState extends State<CustomPhoneInput> {
   void _onVerifyPressed() async {
     if (_isVerifying) return;
 
-    final fullPhoneNumber = '${_selectedCountry!.code}${_controller.text.replaceAll(' ', '')}';
-    
+    // Get language service at the beginning
+    final languageService =
+        Provider.of<LanguageService>(context, listen: false);
+
+    final fullPhoneNumber =
+        '${_selectedCountry!.code}${_controller.text.replaceAll(' ', '')}';
+
     if (_controller.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter a phone number")),
+        SnackBar(content: Text(languageService.getText('enterPhoneNumber'))),
       );
       return;
     }
@@ -546,23 +555,25 @@ class _CustomPhoneInputState extends State<CustomPhoneInput> {
       // Get user ID from storage or service
       final userId = await StorageService.get('user_id');
       if (userId == null) {
-        throw Exception('User ID not found');
+        throw Exception(languageService.getText('userIdNotFound'));
       }
 
       print('Requesting OTP for mobile number change: $fullPhoneNumber');
-      
+
       // Step 1: Request OTP for mobile number change
       final requestDto = ChangeMobileNumberDto(mobileNumber: fullPhoneNumber);
-      final response = await _authService.requestChangeMobileNumber(userId, requestDto);
+      final response =
+          await _authService.requestChangeMobileNumber(userId, requestDto);
 
-      print('Request OTP response: ${response.success}, message: ${response.message}');
+      print(
+          'Request OTP response: ${response.success}, message: ${response.message}');
 
       if (response.success) {
         // Step 2: Show OTP popup and pass userId for verification
         if (mounted) {
           showOtpPopup(
-            context, 
-            fullPhoneNumber, 
+            context,
+            fullPhoneNumber,
             () {
               // This callback will be called when OTP is verified successfully
               widget.onVerified?.call();
@@ -573,7 +584,9 @@ class _CustomPhoneInputState extends State<CustomPhoneInput> {
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(response.message ?? 'Failed to send OTP')),
+            SnackBar(
+                content: Text(response.message ??
+                    languageService.getText('otpSendFailed'))),
           );
         }
       }
@@ -581,7 +594,7 @@ class _CustomPhoneInputState extends State<CustomPhoneInput> {
       print('Error in _onVerifyPressed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text('${languageService.getText('error')}: $e')),
         );
       }
     } finally {

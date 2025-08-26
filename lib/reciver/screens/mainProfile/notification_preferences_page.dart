@@ -54,8 +54,12 @@ class _NotificationPreferencesPageState
       });
     } catch (e) {
       if (mounted) {
+        final languageService =
+            Provider.of<LanguageService>(context, listen: false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load settings: $e')),
+          SnackBar(
+              content: Text(
+                  '${languageService.getText('failedToLoadSettings')}: $e')),
         );
       }
     } finally {
@@ -76,8 +80,12 @@ class _NotificationPreferencesPageState
       await _settingsService.updateSettings(_settings);
     } catch (e) {
       if (mounted) {
+        final languageService =
+            Provider.of<LanguageService>(context, listen: false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save settings: $e')),
+          SnackBar(
+              content: Text(
+                  '${languageService.getText('failedToSaveSettings')}: $e')),
         );
       }
     } finally {
@@ -100,7 +108,7 @@ class _NotificationPreferencesPageState
           children: [
             CustomTopBar.withTitle(
               title: Text(
-                'Notification Preferences',
+                languageService.getText('notificationPreferences'),
                 style: AppFonts.lgBold(context, color: AppColors.white),
               ),
               leading: GestureDetector(
@@ -140,7 +148,7 @@ class _NotificationPreferencesPageState
                       : Column(
                           children: [
                             SwitchCard(
-                              text: 'Tips Received',
+                              text: languageService.getText('tipsReceived'),
                               value: _settings.notifyOnTipReceived,
                               onChanged: (value) async {
                                 setState(() {
@@ -150,7 +158,7 @@ class _NotificationPreferencesPageState
                               },
                             ),
                             SwitchCard(
-                              text: 'Tips Given',
+                              text: languageService.getText('tipsGiven'),
                               value: _settings.notifyOnTipGiven,
                               onChanged: (value) async {
                                 setState(() {
@@ -160,7 +168,8 @@ class _NotificationPreferencesPageState
                               },
                             ),
                             SwitchCard(
-                              text: 'Bank Account Verification',
+                              text: languageService
+                                  .getText('bankAccountVerification'),
                               value: _settings.notifyOnBankAccountVerification,
                               onChanged: (value) async {
                                 setState(() {
@@ -171,7 +180,8 @@ class _NotificationPreferencesPageState
                               },
                             ),
                             SwitchCard(
-                              text: 'Announcement and Offers',
+                              text: languageService
+                                  .getText('announcementAndOffers'),
                               value: _settings.notifyOnAnnouncement,
                               onChanged: (value) async {
                                 setState(() {

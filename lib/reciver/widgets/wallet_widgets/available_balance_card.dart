@@ -1,6 +1,7 @@
 // lib/reciver/auth/widgets/wallet_widgets/available_balance_card.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:provider/provider.dart';
 import 'package:tipme_app/core/dio/client/dio_client.dart';
 import 'package:tipme_app/core/storage/storage_service.dart';
 import 'package:tipme_app/di/gitIt.dart';
@@ -9,6 +10,7 @@ import 'package:tipme_app/services/tipReceiverService.dart';
 import 'package:tipme_app/services/tipReceiverStatisticsService.dart';
 import 'package:tipme_app/utils/app_font.dart';
 import 'package:tipme_app/utils/colors.dart';
+import 'package:tipme_app/data/services/language_service.dart';
 
 class AvailableBalanceCard extends StatefulWidget {
   final String transferDate;
@@ -82,10 +84,12 @@ class _AvailableBalanceCardState extends State<AvailableBalanceCard> {
 
   @override
   Widget build(BuildContext context) {
+    final languageService = Provider.of<LanguageService>(context);
+
     return Container(
       width: double.infinity,
       height: 160,
-      margin: const EdgeInsets.symmetric(horizontal: 32),
+      margin: const EdgeInsets.symmetric(horizontal: 28),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
@@ -123,7 +127,7 @@ class _AvailableBalanceCardState extends State<AvailableBalanceCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Available Balance',
+                    languageService.getText('availableBalance'),
                     style: AppFonts.mdMedium(context, color: AppColors.white),
                   ),
                   const SizedBox(height: 8),

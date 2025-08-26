@@ -1,17 +1,15 @@
 //lib\reciver\auth\widgets\mainProfile_widgets\bottom_sheet.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:tipme_app/data/services/language_service.dart';
 import 'package:tipme_app/utils/app_font.dart';
 import 'package:tipme_app/utils/colors.dart';
 
 class SuccessBottomSheet extends StatelessWidget {
-  final String titleKey;
-  final String descriptionKey;
-  final String primaryButtonTextKey;
-  final String secondaryButtonTextKey;
+  final String title;
+  final String description;
+  final String primaryButtonText;
+  final String secondaryButtonText;
   final Color iconColor;
-  final Color iconBackgroundColor; // New parameter for icon background
+  final Color iconBackgroundColor;
   final Color primaryButtonColor;
   final Color primaryButtonTextColor;
   final Color secondaryButtonBorderColor;
@@ -22,12 +20,12 @@ class SuccessBottomSheet extends StatelessWidget {
 
   const SuccessBottomSheet({
     Key? key,
-    required this.titleKey,
-    required this.descriptionKey,
-    required this.primaryButtonTextKey,
-    required this.secondaryButtonTextKey,
+    required this.title,
+    required this.description,
+    required this.primaryButtonText,
+    required this.secondaryButtonText,
     this.iconColor = Colors.green,
-    this.iconBackgroundColor = Colors.transparent, // Default transparent
+    this.iconBackgroundColor = Colors.transparent,
     this.primaryButtonColor = Colors.cyan,
     this.primaryButtonTextColor = Colors.white,
     this.secondaryButtonBorderColor = Colors.grey,
@@ -39,10 +37,10 @@ class SuccessBottomSheet extends StatelessWidget {
 
   static void show(
     BuildContext context, {
-    required String titleKey,
-    required String descriptionKey,
-    required String primaryButtonTextKey,
-    required String secondaryButtonTextKey,
+    required String title,
+    required String description,
+    required String primaryButtonText,
+    required String secondaryButtonText,
     Color iconColor = Colors.green,
     Color iconBackgroundColor = Colors.white,
     Color primaryButtonColor = Colors.cyan,
@@ -58,10 +56,10 @@ class SuccessBottomSheet extends StatelessWidget {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) => SuccessBottomSheet(
-        titleKey: titleKey,
-        descriptionKey: descriptionKey,
-        primaryButtonTextKey: primaryButtonTextKey,
-        secondaryButtonTextKey: secondaryButtonTextKey,
+        title: title,
+        description: description,
+        primaryButtonText: primaryButtonText,
+        secondaryButtonText: secondaryButtonText,
         iconColor: iconColor,
         iconBackgroundColor: iconBackgroundColor,
         primaryButtonColor: primaryButtonColor,
@@ -77,8 +75,6 @@ class SuccessBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final languageService = Provider.of<LanguageService>(context);
-
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -120,13 +116,13 @@ class SuccessBottomSheet extends StatelessWidget {
             ),
             const SizedBox(height: 28),
             Text(
-              languageService.getText(titleKey),
+              title,
               style: AppFonts.h3(context, color: AppColors.black),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              languageService.getText(descriptionKey),
+              description,
               style: AppFonts.mdMedium(context, color: AppColors.text),
               textAlign: TextAlign.center,
             ),
@@ -148,7 +144,7 @@ class SuccessBottomSheet extends StatelessWidget {
                       ),
                     ),
                     child: Text(
-                      languageService.getText(secondaryButtonTextKey),
+                      secondaryButtonText,
                       style: AppFonts.mdBold(context,
                           color: secondaryButtonTextColor),
                     ),
@@ -167,7 +163,7 @@ class SuccessBottomSheet extends StatelessWidget {
                       elevation: 0,
                     ),
                     child: Text(
-                      languageService.getText(primaryButtonTextKey),
+                      primaryButtonText,
                       style: AppFonts.mdBold(context,
                           color: primaryButtonTextColor),
                     ),

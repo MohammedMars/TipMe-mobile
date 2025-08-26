@@ -100,7 +100,7 @@ class _CustomizeQrScreenState extends State<CustomizeQrScreen> {
           children: [
             _buildQrPreview(),
             const SizedBox(height: 16),
-            _buildUploadButton(languageService, hasLogo),
+            _buildUploadSection(languageService, hasLogo),
           ],
         ),
       ),
@@ -108,37 +108,27 @@ class _CustomizeQrScreenState extends State<CustomizeQrScreen> {
   }
 
   Widget _buildQrPreview() {
-    final languageService = Provider.of<LanguageService>(context);
-
     return Container(
       width: 212,
-      height: 280,
+      height: 212,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         color: AppColors.white,
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Stack(
+        alignment: Alignment.center,
         children: [
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              // QR code display - now with embedded logo
-              QRContent(
-                isGenerating: isGenerating,
-                qrImageBytes: qrBytes,
-                qrDataUri: widget.qrDataUri,
-                errorMessage: null,
-              ),
-              if (isGenerating)
-                const CircularProgressIndicator(), // Show loading when generating
-              // Logo preview (visual only)
-              _buildLogoPreview(),
-            ],
+          // QR code display - now with embedded logo
+          QRContent(
+            isGenerating: isGenerating,
+            qrImageBytes: qrBytes,
+            qrDataUri: widget.qrDataUri,
+            errorMessage: null,
           ),
-          const SizedBox(height: 18),
-          _buildInstructionText(languageService),
+          if (isGenerating)
+            const CircularProgressIndicator(), // Show loading when generating
+          // Logo preview (visual only)
+          _buildLogoPreview(),
         ],
       ),
     );
@@ -177,11 +167,12 @@ class _CustomizeQrScreenState extends State<CustomizeQrScreen> {
                         draftLogo!,
                         fit: BoxFit.contain,
                       )
-                    : const Center(
+                    : Center(
                         child: Text(
-                          "Your\nLogo",
+                          Provider.of<LanguageService>(context)
+                              .getText('yourLogo'),
                           textAlign: TextAlign.center,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 10,
                             color: Colors.black54,
                           ),
@@ -195,51 +186,46 @@ class _CustomizeQrScreenState extends State<CustomizeQrScreen> {
     );
   }
 
-  Widget _buildInstructionText(LanguageService languageService) {
+  Widget _buildUploadSection(LanguageService languageService, bool hasLogo) {
     return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        const SizedBox(height: 48),
         Text(
           languageService.getText('UploadYourLogo'),
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 14,
-          ),
+          style: AppFonts.h5(context, color: AppColors.black),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 16),
         Text(
           languageService.getText("onlyPNG_JPG"),
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: AppColors.text,
-            fontSize: 12,
-            height: 1.3,
-          ),
+          style: AppFonts.smMedium(context, color: AppColors.text),
         ),
-        const SizedBox(height: 4)
+        const SizedBox(height: 16),
+        _buildUploadButton(languageService, hasLogo),
       ],
     );
   }
 
   Widget _buildUploadButton(LanguageService languageService, bool hasLogo) {
-    return SizedBox(
-      width: 150,
-      child: OutlinedButton(
-        onPressed: picking ? null : _pickLogo,
-        style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: AppColors.primary),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
+    return OutlinedButton(
+      onPressed: picking ? null : _pickLogo,
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 24),
+        side: const BorderSide(color: AppColors.secondary),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
         ),
-        child: Text(
-          hasLogo
-              ? languageService.getText("changeLogo")
-              : languageService.getText("uploadLogo"),
-          style: const TextStyle(
-            color: AppColors.primary,
-            fontWeight: FontWeight.w600,
-          ),
+      ),
+      child: Text(
+        hasLogo
+            ? languageService.getText("changeLogo")
+            : languageService.getText("uploadLogo"),
+        style: const TextStyle(
+          color: AppColors.secondary,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
@@ -279,7 +265,7 @@ class _CustomizeQrScreenState extends State<CustomizeQrScreen> {
           });
 
           _showSnackbar("QR code updated with logo successfully!");
-          
+
           // Navigate back to home screen after a short delay
           if (mounted) {
             Future.delayed(const Duration(milliseconds: 1500), () {
