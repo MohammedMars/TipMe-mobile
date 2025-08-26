@@ -4,12 +4,17 @@ import 'package:tipme_app/viewModels/apiResponse.dart';
 import 'package:tipme_app/viewModels/verifyOtpData.dart';
 import 'package:tipme_app/dtos/signInUpDto.dart';
 import 'package:tipme_app/dtos/verifyOtpDto.dart';
+import 'package:tipme_app/dtos/changeMobileNumberDto.dart';
 import 'package:dio/dio.dart';
+import 'package:tipme_app/services/cacheService.dart';
+import 'package:tipme_app/services/tipReceiverService.dart';
 
 class AuthTipReceiverService {
   final DioClient dioClient;
+  final CacheService? cacheService;
+  final TipReceiverService? tipReceiverService;
 
-  AuthTipReceiverService(this.dioClient);
+  AuthTipReceiverService(this.dioClient, {this.cacheService, this.tipReceiverService});
 
   Future<ApiResponse<void>> signUp(SignInUpDto dto) async {
     final response = await dioClient.post(
@@ -54,7 +59,27 @@ class AuthTipReceiverService {
         },
       ),
     );
-    return ApiResponse<void>.fromJson(response.data, (_) => null);
+
+    final apiResponse = ApiResponse<void>.fromJson(response.data, (_) => null);
+
+    // If profile update was successful, clear cache and fetch fresh data
+    if (apiResponse.success) {
+      // Clear the user data cache
+      if (cacheService != null) {
+        cacheService!.clearUserDataCache(userId);
+      }
+
+      // Fetch fresh user data and cache it
+      if (tipReceiverService != null) {
+        try {
+          await tipReceiverService!.GetMe();
+        } catch (e) {
+          print('Failed to refresh user data after profile update: $e');
+        }
+      }
+    }
+
+    return apiResponse;
   }
 
   Future<ApiResponse<void>> login(SignInUpDto dto) async {
@@ -77,5 +102,57 @@ class AuthTipReceiverService {
       response.data,
       (data) => VerifyOtpData.fromJson(data),
     );
+  }
+
+  Future<ApiResponse<String>> requestChangeMobileNumber(String userId, ChangeMobileNumberDto dto) async {
+    final response = await dioClient.post(
+      'ChangeMobileNumberRequest/$userId',
+      data: dto.toJson(),
+      options: Options(
+        headers: {
+          'Authorization': 'Bearer ${await StorageService.get("user_token")}',
+        },
+      ),
+    );
+    return ApiResponse<String>.fromJson(
+      response.data,
+      (data) => data?.toString() ?? '',
+    );
+  }
+  
+  Future<ApiResponse<String>> changeMobileNumber(String userId, VerifyOtpDto dto) async {
+    final response = await dioClient.post(
+      'ChangeMobileNumber/$userId',
+      data: dto.toJson(),
+      options: Options(
+        headers: {
+          'Authorization': 'Bearer ${await StorageService.get("user_token")}',
+        },
+      ),
+    );
+
+    final apiResponse = ApiResponse<String>.fromJson(
+      response.data,
+      (data) => data?.toString() ?? '',
+    );
+
+    // If mobile number change was successful, clear cache and fetch fresh data
+    if (apiResponse.success) {
+      // Clear the user data cache
+      if (cacheService != null) {
+        cacheService!.clearUserDataCache(userId);
+      }
+
+      // Fetch fresh user data and cache it
+      if (tipReceiverService != null) {
+        try {
+          await tipReceiverService!.GetMe();
+        } catch (e) {
+          print('Failed to refresh user data after mobile number change: $e');
+        }
+      }
+    }
+
+    return apiResponse;
   }
 }

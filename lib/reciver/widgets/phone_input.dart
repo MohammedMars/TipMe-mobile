@@ -4,10 +4,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:tipme_app/core/dio/client/dio_client.dart';
+import 'package:tipme_app/core/storage/storage_service.dart';
 import 'package:tipme_app/data/services/language_service.dart';
 import 'package:tipme_app/di/gitIt.dart';
+import 'package:tipme_app/dtos/changeMobileNumberDto.dart';
 import 'package:tipme_app/reciver/widgets/mainProfile_widgets/otp_card.dart';
 import 'package:tipme_app/services/cacheService.dart';
+import 'package:tipme_app/services/authTipReceiverService.dart';
 import 'package:tipme_app/utils/app_font.dart';
 import 'package:tipme_app/utils/colors.dart';
 
@@ -35,6 +38,7 @@ enum PhoneInputMode {
 class CustomPhoneInput extends StatefulWidget {
   final Function(String) onPhoneChanged;
   final Function(String)? onCountryChanged;
+  final VoidCallback? onVerified;
   final String phoneNumber;
   final TextEditingController? controller;
   final bool isVerified;
@@ -45,6 +49,7 @@ class CustomPhoneInput extends StatefulWidget {
     Key? key,
     required this.onPhoneChanged,
     this.onCountryChanged,
+    this.onVerified,
     this.phoneNumber = '',
     this.controller,
     this.isVerified = false,
@@ -61,6 +66,7 @@ class _CustomPhoneInputState extends State<CustomPhoneInput> {
   late FocusNode _focusNode;
   final _cacheService =
       CacheService(sl<DioClient>(instanceName: 'CacheService'));
+  final _authService = sl<AuthTipReceiverService>();
 
   CountryInfo? _selectedCountry;
   List<CountryInfo> _countries = [];
@@ -72,9 +78,8 @@ class _CustomPhoneInputState extends State<CustomPhoneInput> {
   double _dropdownWidth = 0;
   double _maxDropdownWidth = 0;
 
-  bool _isAccountVerified = false;
-  bool _wasOriginallyFilled = true;
   bool _hasBeenEdited = false;
+  bool _isVerifying = false;
 
   @override
   void initState() {
@@ -91,7 +96,6 @@ class _CustomPhoneInputState extends State<CustomPhoneInput> {
       widget.onPhoneChanged(_controller.text);
       if (widget.mode == PhoneInputMode.account) {
         _checkForEdits();
-        _updateVerificationState();
       }
     });
 
@@ -100,8 +104,7 @@ class _CustomPhoneInputState extends State<CustomPhoneInput> {
     });
 
     if (widget.mode == PhoneInputMode.account) {
-      _wasOriginallyFilled = widget.phoneNumber.isNotEmpty;
-      _isAccountVerified = widget.isVerified && !_hasBeenEdited;
+      _hasBeenEdited = widget.phoneNumber.isNotEmpty;
     }
   }
 
@@ -109,25 +112,10 @@ class _CustomPhoneInputState extends State<CustomPhoneInput> {
   void didUpdateWidget(CustomPhoneInput oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Only update controller text if phone number changed AND we're in account mode
-    // In auth mode, let the user type freely without interference
-    if (widget.mode == PhoneInputMode.account &&
-        oldWidget.phoneNumber != widget.phoneNumber) {
-      _controller.text = widget.phoneNumber;
-    }
-
-    // Only update selected country if in account mode and countries are loaded
     if (widget.mode == PhoneInputMode.account &&
         oldWidget.selectedCountryCode != widget.selectedCountryCode &&
         _countries.isNotEmpty) {
       _updateSelectedCountryFromCode(widget.selectedCountryCode);
-    }
-
-    // Update verification status
-    if (oldWidget.isVerified != widget.isVerified) {
-      setState(() {
-        _isAccountVerified = widget.isVerified && !_hasBeenEdited;
-      });
     }
   }
 
@@ -135,20 +123,6 @@ class _CustomPhoneInputState extends State<CustomPhoneInput> {
     if (_controller.text != widget.phoneNumber) {
       setState(() {
         _hasBeenEdited = true;
-      });
-    }
-  }
-
-  void _updateVerificationState() {
-    if (widget.mode == PhoneInputMode.account) {
-      setState(() {
-        if (_wasOriginallyFilled && _hasBeenEdited) {
-          _isAccountVerified = false;
-        } else if (_wasOriginallyFilled && !_hasBeenEdited) {
-          _isAccountVerified = _controller.text.isNotEmpty;
-        } else {
-          _isAccountVerified = false;
-        }
       });
     }
   }
@@ -470,50 +444,12 @@ class _CustomPhoneInputState extends State<CustomPhoneInput> {
       return const SizedBox.shrink();
     }
 
-    if (_isAccountVerified) {
-      return _buildVerifiedBadge();
-    } else {
-      return _buildUnverifiedSection();
-    }
-  }
-
-  Widget _buildVerifiedBadge() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.success_500.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.success_500, width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SvgPicture.asset(
-            'assets/icons/circle-check.svg',
-            width: 15,
-            height: 15,
-            colorFilter: const ColorFilter.mode(
-              AppColors.success_500,
-              BlendMode.srcIn,
-            ),
-          ),
-          const SizedBox(width: 1.5),
-          Text(
-            'Verified',
-            style: AppFonts.smSemiBold(context, color: Colors.green),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUnverifiedSection() {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         _buildClearButton(),
         const SizedBox(width: 8),
-        _buildVerifyButton(),
+        widget.isVerified ? _buildVerifiedStatus() : _buildVerifyButton(),
       ],
     );
   }
@@ -560,20 +496,100 @@ class _CustomPhoneInputState extends State<CustomPhoneInput> {
     );
   }
 
-  void _onVerifyPressed() {
-    final fullPhoneNumber =
-        '${_selectedCountry!.code} ${_controller.text}'.trim();
+  Widget _buildVerifiedStatus() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.success_500.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.success_500, width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SvgPicture.asset(
+            'assets/icons/circle-check.svg',
+            width: 15,
+            height: 15,
+            colorFilter: const ColorFilter.mode(
+              AppColors.success_500,
+              BlendMode.srcIn,
+            ),
+          ),
+          const SizedBox(width: 1.5),
+          Text(
+            'Verified',
+            style: AppFonts.smSemiBold(context, color: Colors.green),
+          ),
+        ],
+      ),
+    );
+  }
 
-    if (_controller.text.isNotEmpty) {
-      showOtpPopup(context, fullPhoneNumber, () {
-        setState(() {
-          _isAccountVerified = true;
-        });
-      });
-    } else {
+  void _onVerifyPressed() async {
+    if (_isVerifying) return;
+
+    final fullPhoneNumber = '${_selectedCountry!.code}${_controller.text.replaceAll(' ', '')}';
+    
+    if (_controller.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please enter a phone number")),
       );
+      return;
+    }
+
+    setState(() {
+      _isVerifying = true;
+    });
+
+    try {
+      // Get user ID from storage or service
+      final userId = await StorageService.get('user_id');
+      if (userId == null) {
+        throw Exception('User ID not found');
+      }
+
+      print('Requesting OTP for mobile number change: $fullPhoneNumber');
+      
+      // Step 1: Request OTP for mobile number change
+      final requestDto = ChangeMobileNumberDto(mobileNumber: fullPhoneNumber);
+      final response = await _authService.requestChangeMobileNumber(userId, requestDto);
+
+      print('Request OTP response: ${response.success}, message: ${response.message}');
+
+      if (response.success) {
+        // Step 2: Show OTP popup and pass userId for verification
+        if (mounted) {
+          showOtpPopup(
+            context, 
+            fullPhoneNumber, 
+            () {
+              // This callback will be called when OTP is verified successfully
+              widget.onVerified?.call();
+            },
+            userId: userId, // Pass userId to OTP popup
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(response.message ?? 'Failed to send OTP')),
+          );
+        }
+      }
+    } catch (e) {
+      print('Error in _onVerifyPressed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isVerifying = false;
+        });
+      }
     }
   }
 

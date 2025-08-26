@@ -49,7 +49,8 @@ class CacheService {
 
   Future<List<City>> getCities(String countryId) async {
     final response = await dioClient.get('Cities/$countryId');
-    final List<dynamic> data = response.data;
+    final Map<String, dynamic> responseData = response.data;
+    final List<dynamic> data = responseData['data'];
     return data.map((json) => City.fromJson(json)).toList();
   }
 

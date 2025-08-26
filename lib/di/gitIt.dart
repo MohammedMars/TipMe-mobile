@@ -11,6 +11,7 @@ import 'package:tipme_app/services/qrCodeService.dart';
 import 'package:tipme_app/services/tipReceiverService.dart';
 import 'package:tipme_app/services/tipReceiverStatisticsService.dart';
 import 'package:tipme_app/services/tipTransactionService.dart';
+import 'package:tipme_app/services/authTipReceiverService.dart';
 
 final sl = GetIt.instance;
 final getIt = GetIt.instance;
@@ -50,6 +51,13 @@ Future<void> setupServiceLocator() async {
   sl.registerLazySingleton<TipTransactionService>(() => TipTransactionService(
         dioClient: sl<DioClient>(instanceName: 'TipTransaction'),
         cacheService: sl<CacheService>(),
+      ));
+
+  // Register AuthTipReceiverService with CacheService and TipReceiverService
+  sl.registerLazySingleton<AuthTipReceiverService>(() => AuthTipReceiverService(
+        sl<DioClient>(instanceName: 'AuthTipReceiver'),
+        cacheService: sl<CacheService>(),
+        tipReceiverService: sl<TipReceiverService>(),
       ));
 }
 

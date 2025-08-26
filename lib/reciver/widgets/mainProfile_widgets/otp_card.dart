@@ -6,11 +6,20 @@ import 'package:tipme_app/reciver/widgets/mainProfile_widgets/verification_succe
 import 'package:tipme_app/utils/app_font.dart';
 import 'package:tipme_app/utils/colors.dart';
 import 'package:tipme_app/data/services/language_service.dart';
+import 'package:tipme_app/services/authTipReceiverService.dart';
+import 'package:tipme_app/dtos/verifyOtpDto.dart';
+import 'package:tipme_app/di/gitIt.dart';
 
 ValueNotifier<bool> isPhoneVerified = ValueNotifier(false);
 
-void showOtpPopup(BuildContext context, String phoneNumber,
-    VoidCallback onVerificationSuccess) {
+void showOtpPopup(
+  BuildContext context, 
+  String phoneNumber,
+  VoidCallback onVerificationSuccess, {
+  String? userId,
+}) {
+  final authService = sl<AuthTipReceiverService>();
+  
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -23,6 +32,7 @@ void showOtpPopup(BuildContext context, String phoneNumber,
       String otpCode = "";
       final ValueNotifier<bool> isButtonEnabled = ValueNotifier(false);
       final ValueNotifier<bool> isResending = ValueNotifier(false);
+      final ValueNotifier<bool> isVerifying = ValueNotifier(false);
 
       final GlobalKey<OtpInputState> otpInputKey = GlobalKey<OtpInputState>();
 
@@ -31,31 +41,78 @@ void showOtpPopup(BuildContext context, String phoneNumber,
         isButtonEnabled.value = otpCode.length == 6;
       }
 
-      void onVerify() {
+      void onVerify() async {
         if (otpCode.length == 6) {
-          print("OTP Verified: $otpCode");
+          isVerifying.value = true;
+          
+          bool verificationSuccess = false;
+          
+          // Call ChangeMobileNumber API if userId is provided
+          if (userId != null) {
+            try {
+              print('Verifying OTP and changing mobile number: $otpCode');
+              
+              final verifyDto = VerifyOtpDto(
+                mobileNumber: phoneNumber,
+                otp: otpCode,
+              );
+              final changeResponse = await authService.changeMobileNumber(userId, verifyDto);
+              
+              print('Change mobile number response: ${changeResponse.success}, message: ${changeResponse.message}');
+              
+              if (changeResponse.success) {
+                verificationSuccess = true;
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(changeResponse.message ?? 'Failed to verify OTP'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            } catch (e) {
+              print('Error verifying OTP: $e');
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Error verifying OTP: $e'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          } else {
+            // Default behavior for non-mobile-change scenarios
+            verificationSuccess = true;
+          }
+          
+          isVerifying.value = false;
+          
+          if (verificationSuccess) {
+            print("OTP Verified: $otpCode");
 
-          Navigator.of(context).pop();
+            Navigator.of(context).pop();
 
-          showModalBottomSheet(
-            context: context,
-            backgroundColor: Colors.transparent,
-            isScrollControlled: true,
-            builder: (context) => VerificationSuccessSheet(
-              titleKey: 'Verified Successfully',
-              descriptionKey: 'Your OTP has been verified successfully.',
-              buttonTextKey: 'Close',
-              iconColor: AppColors.success,
-              iconBackgroundColor: AppColors.white,
-              buttonColor: AppColors.primary,
-              buttonTextColor: AppColors.white,
-              onButtonPressed: () {
-                onVerificationSuccess();
-                Navigator.of(context).pop();
-              },
-              icon: Icons.check,
-            ),
-          );
+            showModalBottomSheet(
+              context: context,
+              backgroundColor: Colors.transparent,
+              isScrollControlled: true,
+              builder: (context) => VerificationSuccessSheet(
+                titleKey: 'Verified Successfully',
+                descriptionKey: userId != null 
+                    ? 'Your mobile number has been changed successfully.'
+                    : 'Your OTP has been verified successfully.',
+                buttonTextKey: 'Close',
+                iconColor: AppColors.success,
+                iconBackgroundColor: AppColors.white,
+                buttonColor: AppColors.primary,
+                buttonTextColor: AppColors.white,
+                onButtonPressed: () {
+                  onVerificationSuccess();
+                  Navigator.of(context).pop();
+                },
+                icon: Icons.check,
+              ),
+            );
+          }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -179,27 +236,41 @@ void showOtpPopup(BuildContext context, String phoneNumber,
                       ValueListenableBuilder<bool>(
                         valueListenable: isButtonEnabled,
                         builder: (context, enabled, child) {
-                          return SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: enabled ? onVerify : null,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                disabledBackgroundColor:
-                                    AppColors.primary.withOpacity(0.4),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(30),
+                          return ValueListenableBuilder<bool>(
+                            valueListenable: isVerifying,
+                            builder: (context, verifying, child) {
+                              return SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: (enabled && !verifying) ? onVerify : null,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                    disabledBackgroundColor:
+                                        AppColors.primary.withOpacity(0.4),
+                                    padding:
+                                        const EdgeInsets.symmetric(vertical: 16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(30),
+                                    ),
+                                  ),
+                                  child: verifying
+                                      ? SizedBox(
+                                          height: 20,
+                                          width: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          ),
+                                        )
+                                      : Text(
+                                          languageService.getText("verifyPhoneNumber") ??
+                                              "Verify Phone Number",
+                                          style: AppFonts.mdBold(context,
+                                              color: AppColors.white),
+                                        ),
                                 ),
-                              ),
-                              child: Text(
-                                languageService.getText("verifyPhoneNumber") ??
-                                    "Verify Phone Number",
-                                style: AppFonts.mdBold(context,
-                                    color: AppColors.white),
-                              ),
-                            ),
+                              );
+                            },
                           );
                         },
                       ),

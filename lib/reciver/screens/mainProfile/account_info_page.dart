@@ -34,8 +34,7 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
   final TextEditingController _phoneController = TextEditingController();
 
   final tipReceiverService = sl<TipReceiverService>();
-  final authTipReceiverService =
-      AuthTipReceiverService(sl<DioClient>(instanceName: 'AuthTipReceiver'));
+  final authTipReceiverService =sl<AuthTipReceiverService>();
 
   bool _isLoading = true;
   bool _isUpdating = false;
@@ -118,7 +117,6 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
 
     try {
       final cleanPhoneNumber = _phoneController.text.replaceAll(' ', '');
-
       final fullPhoneNumber = '$_selectedCountryCode$cleanPhoneNumber';
       final formData = FormData.fromMap({
         'firstName': _firstNameController.text,
@@ -131,11 +129,9 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
               MultipartFile.fromBytes(_imageBytes!, filename: "profile.png"),
       });
       await authTipReceiverService.editProfile(_userId!, formData);
-
       setState(() {
         _originalCountryCode = _selectedCountryCode;
         _originalPhoneNumber = _phoneController.text;
-        _isPhoneVerified = true;
       });
 
       if (mounted) {
@@ -262,24 +258,18 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
     final bool isPhoneNotEmpty = _phoneController.text.isNotEmpty;
 
     setState(() {
-      _isPhoneVerified = isSameCountry && isSamePhone && isPhoneNotEmpty;
+      if (isSameCountry && isSamePhone && isPhoneNotEmpty) {
+        _isPhoneVerified = true;
+      } else if (!isSameCountry || !isSamePhone) {
+        if (_isPhoneVerified && (_originalCountryCode != null && _originalPhoneNumber != null)) {
+          _isPhoneVerified = false;
+        }
+      }
     });
   }
 
   void _onUpdatePressed() {
     _updateProfile();
-  }
-
-  void _onPhoneVerified() {
-    setState(() {
-      _isPhoneVerified = true;
-      _originalCountryCode = _selectedCountryCode;
-      _originalPhoneNumber = _phoneController.text;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Phone number verified successfully')),
-    );
   }
 
   @override
@@ -392,6 +382,11 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
                             isVerified: _isPhoneVerified,
                             onPhoneChanged: _onPhoneChanged,
                             onCountryChanged: _onCountryChanged,
+                            onVerified: () {
+                              setState(() {
+                                _isPhoneVerified = true;
+                              });
+                            },
                           ),
                         ],
                       ),
@@ -401,6 +396,7 @@ class _AccountInfoPageState extends State<AccountInfoPage> {
                         onPressed: _onUpdatePressed,
                         showArrow: true,
                         isLoading: _isUpdating,
+                        isEnabled: _isPhoneVerified,
                       ),
                     ],
                   ),
